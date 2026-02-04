@@ -18,26 +18,26 @@ public class HibernateUtil {
                 
                 Configuration hibernateConfig = new Configuration();
                 
-              
+
                 hibernateConfig.setProperty(Environment.DRIVER, "org.postgresql.Driver");
                 hibernateConfig.setProperty(Environment.URL, dbConfig.getString("url"));
                 hibernateConfig.setProperty(Environment.USER, dbConfig.getString("username"));
                 hibernateConfig.setProperty(Environment.PASS, dbConfig.getString("password"));
                 
-             
+
                 Config poolConfig = dbConfig.getConfig("pool");
                 hibernateConfig.setProperty(Environment.C3P0_MAX_SIZE, String.valueOf(poolConfig.getInt("maximumPoolSize")));
                 hibernateConfig.setProperty(Environment.C3P0_MIN_SIZE, String.valueOf(poolConfig.getInt("minimumIdle")));
                 hibernateConfig.setProperty(Environment.C3P0_TIMEOUT, String.valueOf(poolConfig.getInt("connectionTimeout")));
                 
-              
+
                 Config hibernateSettings = dbConfig.getConfig("hibernate");
                 hibernateConfig.setProperty(Environment.DIALECT, hibernateSettings.getString("dialect"));
                 hibernateConfig.setProperty(Environment.HBM2DDL_AUTO, hibernateSettings.getString("hbm2ddl.auto"));
                 hibernateConfig.setProperty(Environment.SHOW_SQL, String.valueOf(hibernateSettings.getBoolean("show_sql")));
                 hibernateConfig.setProperty(Environment.FORMAT_SQL, String.valueOf(hibernateSettings.getBoolean("format_sql")));
-                
-                
+
+
                 hibernateConfig.addAnnotatedClass(com.mapua.library.models.User.class);
                 hibernateConfig.addAnnotatedClass(com.mapua.library.models.Transaction.class);
                 hibernateConfig.addAnnotatedClass(com.mapua.library.models.TransactionDetail.class);
@@ -49,7 +49,7 @@ public class HibernateUtil {
             } catch (Exception e) {
                 System.err.println("Error creating SessionFactory: " + e.getMessage());
                 e.printStackTrace();
-                throw new ExceptionInInitializerError(e);
+                throw new RuntimeException("Failed to initialize database connection", e);
             }
         }
         return sessionFactory;

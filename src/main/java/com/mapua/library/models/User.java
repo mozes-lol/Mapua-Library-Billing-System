@@ -28,6 +28,9 @@ public class User {
     @Column(name = "role", length = 50)
     private String role;
 
+    @Column(name = "password", length = 255)
+    private String password;
+
     @Column(name = "program", length = 50)
     private String program = "";
 
@@ -101,6 +104,14 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getProgram() {
