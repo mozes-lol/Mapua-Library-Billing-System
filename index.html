@@ -2,11 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=login.html">
-    <title>Redirecting...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapua Library Billing System</title>
 </head>
 <body>
-    <p>Redirecting to login page...</p>
-    <p>If not redirected, <a href="login.html">click here</a>.</p>
+    <h1>Mapua Library Billing System</h1>
+    
+    <form id="loginForm">
+        <div>
+            <label>Email:</label><br>
+            <input type="email" id="email" required style="width: 300px; padding: 5px;">
+        </div>
+        <br>
+        <div>
+            <label>Password:</label><br>
+            <input type="password" id="password" required style="width: 300px; padding: 5px;">
+        </div>
+        <br>
+        <button type="submit">Login</button>
+    </form>
+    
+    <p id="status"></p>
+
+    <script type="module" src="app.js"></script>
 </body>
 </html>

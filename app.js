@@ -5,7 +5,7 @@ const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey)
 
 const currentPage = window.location.pathname.split('/').pop()
 
-if (currentPage === 'login.html' || currentPage === '') {
+if (currentPage === 'index.html' || currentPage === '') {
     initLoginPage()
 } else if (currentPage === 'dashboard.html') {
     initDashboardPage()
@@ -85,7 +85,7 @@ function initDashboardPage() {
     const userJson = localStorage.getItem('currentUser')
     
     if (!userJson) {
-        window.location.href = 'login.html'
+        window.location.href = 'index.html'
         return
     }
 
@@ -112,7 +112,7 @@ function initDashboardPage() {
             status.style.color = 'green'
             
             setTimeout(() => {
-                window.location.href = 'login.html'
+                window.location.href = 'index.html'
             }, 1000)
         }
     })
@@ -122,6 +122,9 @@ async function checkIfLoggedIn() {
     const { data: { session } } = await supabase.auth.getSession()
     
     if (session) {
-        window.location.href = 'dashboard.html'
+        const userJson = localStorage.getItem('currentUser')
+        if (userJson) {
+            window.location.href = 'dashboard.html'
+        }
     }
 }
