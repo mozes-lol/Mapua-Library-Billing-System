@@ -1,7 +1,0 @@
-com\mapua\library\util\HibernateUtil.class
-com\mapua\library\MainApp.class
-com\mapua\library\models\User.class
-com\mapua\library\models\TransactionDetail.class
-com\mapua\library\models\AuditLog.class
-com\mapua\library\models\ServiceType.class
-com\mapua\library\models\Transaction.class
