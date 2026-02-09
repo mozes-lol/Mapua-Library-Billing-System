@@ -130,6 +130,14 @@ function initDashboardPage() {
     await submitTransaction(user, status);
   });
 
+  const resetBtn = document.querySelector('button[type="reset"]');
+  if (resetBtn) {
+    resetBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      resetServices();
+    });
+  }
+
   logoutBtn.addEventListener("click", async () => {
     const { error } = await supabase.auth.signOut();
 
@@ -152,6 +160,29 @@ function setTextIfExists(elementId, value) {
   const element = document.getElementById(elementId);
   if (element) {
     element.textContent = value;
+  }
+}
+
+function resetServices() {
+  document.querySelectorAll('input[name="service"]').forEach((checkbox) => {
+    checkbox.checked = false;
+    const serviceId = checkbox.value;
+    const quantityInput = document.getElementById(`quantity_${serviceId}`);
+    if (quantityInput) {
+      quantityInput.disabled = true;
+      quantityInput.value = 0;
+    }
+  });
+
+  const serviceForm = document.getElementById("serviceForm");
+  if (serviceForm) {
+    serviceForm.reset();
+  }
+
+  
+  const status = document.getElementById("status");
+  if (status) {
+    status.textContent = "";
   }
 }
 
@@ -300,8 +331,15 @@ async function submitTransaction(user, statusElement) {
 
     document.getElementById("serviceForm").reset();
 
+    document.querySelectorAll('input[name="service"]').forEach((checkbox) => {
+      const serviceId = checkbox.value;
+      const qty = document.getElementById(`quantity_${serviceId}`);
+      qty.disabled = !checkbox.checked;
+      qty.value = checkbox.checked ? 1 : 0;
+    });
+
     document.querySelectorAll('input[type="number"]').forEach((input) => {
-      input.disabled = true;
+      input.disabled = false;
     });
   } catch (error) {
     console.error("Transaction error:", error);
@@ -309,6 +347,8 @@ async function submitTransaction(user, statusElement) {
     statusElement.style.color = "red";
   }
 }
+
+
 
 function getCurrentSchoolYear() {
   const now = new Date();
@@ -352,3 +392,5 @@ async function checkIfLoggedIn() {
     }
   }
 }
+
+
