@@ -1,29 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mapua Library Billing System</title>
-</head>
-<body>
-    <h1>Mapua Library Billing System</h1>
-    
-    <form id="loginForm">
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Mapua Library Billing System</h1>
+
+      <form id="loginForm">
         <div>
-            <label>Email:</label><br>
-            <input type="email" id="email" required style="width: 300px; padding: 5px;">
+          <label>Email:</label><br />
+          <input
+            type="email"
+            id="email"
+            required
+            style="width: 300px; padding: 5px"
+          />
         </div>
-        <br>
+        <br />
         <div>
-            <label>Password:</label><br>
-            <input type="password" id="password" required style="width: 300px; padding: 5px;">
+          <label>Password:</label><br />
+          <input
+            type="password"
+            id="password"
+            required
+            style="width: 300px; padding: 5px"
+          />
         </div>
-        <br>
+        <br />
         <button type="submit">Login</button>
-    </form>
+      </form>
+    </div>
     
     <p id="status"></p>
 
     <script type="module" src="app.js"></script>
-</body>
+  </body>
 </html>

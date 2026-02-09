@@ -1,0 +1,18 @@
+body {
+  background: linear-gradient(270deg, #730400 62.02%, #630700 100%);
+  overflow: hidden;
+}
+
+.container {
+  width: fit-content;
+  height: 100%;
+  align-items: center;
+  background-color: #730400;
+  fill: rgba(77, 59, 47, 0.3);
+  border-width: 3%;
+  border-radius: 20%;
+  border-color: #fef6dc;
+  border-style: solid;
+  -webkit-filter: drop-shadow(0 4px 100px rgba(0, 0, 0, 0.8));
+  -webkit-backdrop-filter: blur(50px);
+}
