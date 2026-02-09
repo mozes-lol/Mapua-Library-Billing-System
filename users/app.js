@@ -14,18 +14,26 @@ if (currentPage === "index.html" || currentPage === "") {
 function initLoginPage() {
   const loginForm = document.getElementById("loginForm");
   const status = document.getElementById("status");
+  const loadingOverlay = document.getElementById("loadingOverlay");
+  const loadingText = loadingOverlay.querySelector(".loading-text");
+  const submitBtn = document.querySelector(".submit-btn");
 
   checkIfLoggedIn();
 
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    status.textContent = "Logging in...";
+    
+    // Show loading spinner
+    loadingText.textContent = "Logging in...";
+    loadingOverlay.style.display = "flex";
+    submitBtn.disabled = true;
+    status.textContent = "";
 
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
     try {
-      status.textContent = "Authenticating...";
+      loadingText.textContent = "Authenticating...";
 
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({
@@ -38,7 +46,7 @@ function initLoginPage() {
         throw new Error("Authentication failed: " + authError.message);
       }
 
-      status.textContent = "Fetching user data...";
+      loadingText.textContent = "Fetching user data...";
       console.log("Auth successful, fetching user data for:", email);
 
       const { data: userData, error: userError } = await supabase
@@ -70,14 +78,18 @@ function initLoginPage() {
       const user = userData[0];
       localStorage.setItem("currentUser", JSON.stringify(user));
 
-      status.textContent = "Login successful! Redirecting...";
-      status.style.color = "green";
-
+      loadingText.textContent = "Login successful! Redirecting...";
+      
       setTimeout(() => {
         window.location.href = "dashboard.html";
       }, 1000);
     } catch (error) {
       console.error("Login error:", error);
+      
+      // Hide loading spinner on error
+      loadingOverlay.style.display = "none";
+      submitBtn.disabled = false;
+      
       status.textContent = "Login failed: " + error.message;
       status.style.color = "red";
     }
