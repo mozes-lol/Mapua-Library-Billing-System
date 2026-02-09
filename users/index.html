@@ -7,36 +7,54 @@
     <link rel="stylesheet" href="index.css" />
   </head>
   <body>
-    <div class="container">
+    <div class="index-container">
+      <img
+        class="img-logo"
+        src="../resources/mapua_logo.png"
+        alt="Mapua Logo"
+      />
+
       <h1>Mapua Library Billing System</h1>
 
       <form id="loginForm">
-        <div>
-          <label>Email:</label><br />
-          <input
-            type="email"
-            id="email"
-            required
-            style="width: 300px; padding: 5px"
-          />
-        </div>
         <br />
-        <div>
-          <label>Password:</label><br />
+
+        <div class="input-box">
+          <input type="email" id="email" required placeholder="Email" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="52"
+            height="40"
+            viewBox="0 0 52 53"
+            fill="none"
+            id="account-icon"
+          >
+            <path
+              d="M26 0C18.8175 0 13 5.92937 13 13.25C13 20.5541 18.8175 26.5 26 26.5C33.1825 26.5 39 20.5541 39 13.25C39 5.92937 33.1825 0 26 0ZM26 33.125C17.3387 33.125 0 37.5472 0 46.375V53H52V46.375C52 37.5472 34.6613 33.125 26 33.125Z"
+              fill="#fedcba"
+            />
+          </svg>
+        </div>
+
+        <br />
+        <br />
+
+        <div class="input-box">
           <input
             type="password"
             id="password"
             required
-            style="width: 300px; padding: 5px"
+            placeholder="Password"
           />
         </div>
+
         <br />
+
         <button type="submit">Login</button>
       </form>
-    </div>
-    
-    <p id="status"></p>
 
+      <p id="status"></p>
+    </div>
     <script type="module" src="app.js"></script>
   </body>
 </html>
