@@ -28,8 +28,10 @@ body {
   background-color: #fef6dc;
   width: 30%;
   margin-top: 2%;
-  margin-left: 35%;
+  margin-left: 40%;
   border-radius: 50%;
+  height: 30%;
+  width: 25%;
 }
 
 h1 {
@@ -76,13 +78,6 @@ h1 {
   font-weight: 700;
 }
 
-#account-icon,
-#password-icon {
-  margin-left: 55%;
-  margin-top: 1.5%;
-  position: absolute;
-}
-
 .submit-btn {
   background-color: #fef6dc;
   color: #730400;
@@ -97,4 +92,3 @@ h1 {
 }
 
 
-/* For services.html */
