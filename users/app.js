@@ -98,17 +98,18 @@ function initDashboardPage() {
 
   const user = JSON.parse(userJson);
 
-  document.getElementById("userId").textContent = user.user_id || "N/A";
-  document.getElementById("userName").textContent = `${user.given_name} ${
-    user.middle_name || ""
-  } ${user.last_name}`.trim();
-  document.getElementById("userEmail").textContent =
-    user.email_address || "N/A";
-  document.getElementById("userRole").textContent = user.role || "N/A";
-  document.getElementById("userProgram").textContent = user.program || "N/A";
-  document.getElementById("userYear").textContent = user.year || "N/A";
-  document.getElementById("userDepartment").textContent =
-    user.department || "N/A";
+  setTextIfExists("userId", user.user_id || "N/A");
+  setTextIfExists(
+    "userName",
+    `${user.given_name} ${user.middle_name || ""} ${user.last_name}`.trim()
+  );
+  setTextIfExists("userEmail", user.email_address || "N/A");
+  setTextIfExists("userRole", user.role || "N/A");
+  setTextIfExists("userProgram", user.program || "N/A");
+  setTextIfExists("userYear", user.year || "N/A");
+  setTextIfExists("userDepartment", user.department || "N/A");
+  
+  console.log(user.email_address, user.role);
 
   loadServices();
 
@@ -133,6 +134,13 @@ function initDashboardPage() {
       }, 1000);
     }
   });
+}
+
+function setTextIfExists(elementId, value) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.textContent = value;
+  }
 }
 
 async function loadServices() {

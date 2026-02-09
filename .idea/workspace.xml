@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="cc35eb1b-5f03-41ac-90f8-f705a970e24f" name="Changes" comment="Supabase is already connected to the system">
+      <change beforePath="$PROJECT_DIR$/target/classes/com/mapua/library/models/AuditLog.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/mapua/library/models/AuditLog.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/mapua/library/models/ServiceType.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/mapua/library/models/ServiceType.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/mapua/library/models/Transaction.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/mapua/library/models/Transaction.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/mapua/library/models/TransactionDetail.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/mapua/library/models/TransactionDetail.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/mapua/library/models/User.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/mapua/library/models/User.class" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;AMBG0215&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mozes-lol/Mapua-Library-Billing-System.git&quot;,
+    &quot;accountId&quot;: &quot;aa019d9a-c385-4e75-a02c-73d865db5809&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="39A7ZwlgmgiMOc7qZbDF5FF4KG3" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/ADMIN/Desktop/PROJECT/Mapua-Library-Billing-System&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
+  }
+}</component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="Mapua-Library-Billing-System" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="Mapua-Library-Billing-System" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="cc35eb1b-5f03-41ac-90f8-f705a970e24f" name="Changes" comment="" />
+      <created>1770127081550</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1770127081550</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Supabase is already connected to the system">
+      <option name="closed" value="true" />
+      <created>1770132162421</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1770132162421</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
+    <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Supabase is already connected to the system" />
+    <option name="LAST_COMMIT_MESSAGE" value="Supabase is already connected to the system" />
+  </component>
+</project>
