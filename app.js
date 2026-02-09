@@ -81,6 +81,7 @@ function initLoginPage() {
 function initDashboardPage() {
     const status = document.getElementById('status')
     const logoutBtn = document.getElementById('logoutBtn')
+    const serviceForm = document.getElementById('serviceForm')
 
     const userJson = localStorage.getItem('currentUser')
     
@@ -100,6 +101,15 @@ function initDashboardPage() {
     document.getElementById('userYear').textContent = user.year || 'N/A'
     document.getElementById('userDepartment').textContent = user.department || 'N/A'
 
+    
+    loadServices()
+
+
+    serviceForm.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        await submitTransaction(user, status)
+    })
+
     logoutBtn.addEventListener('click', async () => {
         const { error } = await supabase.auth.signOut()
         
@@ -116,6 +126,185 @@ function initDashboardPage() {
             }, 1000)
         }
     })
+}
+
+async function loadServices() {
+    const servicesList = document.getElementById('servicesList')
+    
+    try {
+        const { data: services, error } = await supabase
+            .from('service_type')
+            .select('*')
+            .order('service_id', { ascending: true })
+
+        if (error) {
+            console.error('Error fetching services:', error)
+            servicesList.innerHTML = '<p>Error loading services</p>'
+            return
+        }
+
+        if (!services || services.length === 0) {
+            servicesList.innerHTML = '<p>No services available</p>'
+            return
+        }
+
+       
+        servicesList.innerHTML = services.map(service => `
+            <div>
+                <input type="checkbox" id="service_${service.service_id}" name="service" value="${service.service_id}" data-price="${service.unitprice}">
+                <label for="service_${service.service_id}">${service.servicename} - ₱${service.unitprice}</label>
+                <input type="number" id="quantity_${service.service_id}" min="0" value="0" disabled>
+            </div>
+        `).join('')
+
+       
+        services.forEach(service => {
+            const checkbox = document.getElementById(`service_${service.service_id}`)
+            const quantityInput = document.getElementById(`quantity_${service.service_id}`)
+
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    quantityInput.disabled = false
+                    quantityInput.value = 1
+                } else {
+                    quantityInput.disabled = true
+                    quantityInput.value = 0
+                }
+            })
+        })
+
+    } catch (error) {
+        console.error('Error loading services:', error)
+        servicesList.innerHTML = '<p>Error loading services</p>'
+    }
+}
+
+async function submitTransaction(user, statusElement) {
+    try {
+       
+        const checkboxes = document.querySelectorAll('input[name="service"]:checked')
+        
+        if (checkboxes.length === 0) {
+            statusElement.textContent = 'Please select at least one service'
+            statusElement.style.color = 'red'
+            return
+        }
+
+        const selectedServices = []
+        let totalAmount = 0
+
+        checkboxes.forEach(checkbox => {
+            const serviceId = parseInt(checkbox.value)
+            const price = parseFloat(checkbox.dataset.price)
+            const quantity = parseInt(document.getElementById(`quantity_${serviceId}`).value)
+            
+            if (quantity > 0) {
+                const subtotal = price * quantity
+
+                selectedServices.push({
+                    service_id: serviceId,
+                    quantity: quantity,
+                    total: subtotal
+                })
+
+                totalAmount += subtotal
+            }
+        })
+
+        if (selectedServices.length === 0) {
+            statusElement.textContent = 'Please enter quantity for at least one service'
+            statusElement.style.color = 'red'
+            return
+        }
+
+        statusElement.textContent = 'Processing transaction...'
+        statusElement.style.color = 'blue'
+
+        
+        const { data: transaction, error: transactionError } = await supabase
+            .from('transactions')
+            .insert({
+                user_id: user.user_id,
+                date_time: new Date().toISOString(),
+                school_year: getCurrentSchoolYear(),
+                term: getCurrentTerm(),
+                processed_by: null,  // iseset ng admin kapag na-approve
+                status: 'Pending'
+            })
+            .select()
+            .single()
+
+        if (transactionError) {
+            throw new Error('Failed to create transaction: ' + transactionError.message)
+        }
+
+       
+        const { error: detailsError } = await supabase
+            .from('transaction_detail')
+            .insert({
+                transaction_id: transaction.transaction_id,
+                services: selectedServices,
+                total_amount: totalAmount
+            })
+
+        if (detailsError) {
+            throw new Error('Failed to save transaction details: ' + detailsError.message)
+        }
+
+        console.log('Transaction submitted successfully!')
+        console.log('Transaction ID:', transaction.transaction_id)
+        console.log('Status:', transaction.status)
+        console.log('Total Amount:', totalAmount)
+        console.log('Services:', selectedServices)
+
+        statusElement.textContent = `Transaction submitted successfully! Status: Pending approval. Total: ₱${totalAmount.toFixed(2)}`
+        statusElement.style.color = 'green'
+
+       
+        document.getElementById('serviceForm').reset()
+        
+        
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.disabled = true
+        })
+
+    } catch (error) {
+        console.error('Transaction error:', error)
+        statusElement.textContent = 'Transaction failed: ' + error.message
+        statusElement.style.color = 'red'
+    }
+}
+
+function getCurrentSchoolYear() {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+    
+   
+    if (month < 8) {
+        return `${year - 1}-${year}`
+    }
+    return `${year}-${year + 1}`
+}
+
+function getCurrentTerm() {
+    const now = new Date()
+    const month = now.getMonth() + 1
+    
+    
+    if (month >= 8 && month <= 12) {
+        return '1st Term'
+    }
+ 
+    if (month >= 1 && month <= 3) {
+        return '2nd Term'
+    }
+
+    if (month >= 4 && month <= 7) {
+        return '3rd Term'
+    }
+   
+    return '1st Term'
 }
 
 async function checkIfLoggedIn() {
