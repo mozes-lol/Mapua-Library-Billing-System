@@ -1,20 +1,34 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_CONFIG } from "../config.js";
 
-const link = document.createElement("link");
-link.rel = "stylesheet";
-link.href = "dashboard.css";
-
-document.head.appendChild(link);
-
-const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+// const link = document.createElement("link");
+// link.rel = "stylesheet";
+// link.href = "dashboard.css";
+// document.head.appendChild(link);
 
 const currentPage = window.location.pathname.split("/").pop();
+
+if (
+  currentPage === "index.html" ||
+  currentPage === "" ||
+  currentPage === "dashboard.html"
+) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "dashboard.css";
+  document.head.appendChild(link);
+}
+
+const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 
 if (currentPage === "index.html" || currentPage === "") {
   initLoginPage();
 } else if (currentPage === "dashboard.html") {
   initDashboardPage();
+} else if (currentPage === "transactionDetails.html") {
+  initTransactionDetailsPage();
+} else if (currentPage === "transactionStatus.html") {
+  initTransactionStatusPage();
 }
 
 function initLoginPage() {
@@ -131,9 +145,65 @@ function initDashboardPage() {
 
   loadServices();
 
-  serviceForm.addEventListener("submit", async (e) => {
+  
+  serviceForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    await submitTransaction(user, status);
+
+    const proceed = window.confirm("Proceed to transaction details?");
+    if (!proceed) {
+      return;
+    }
+
+    const checkboxes = document.querySelectorAll(
+      'input[name="service"]:checked'
+    );
+
+    if (checkboxes.length === 0) {
+      status.textContent = "Please select at least one service";
+      status.style.color = "red";
+      return;
+    }
+
+    const selectedServices = [];
+    let totalAmount = 0;
+
+    checkboxes.forEach((checkbox) => {
+      const serviceId = parseInt(checkbox.value, 10);
+      const price = parseFloat(checkbox.dataset.price);
+      const quantity = parseInt(
+        document.getElementById(`quantity_${serviceId}`).value,
+        10
+      );
+
+      if (quantity > 0) {
+        const subtotal = price * quantity;
+
+        selectedServices.push({
+          service_id: serviceId,
+          quantity: quantity,
+          total: subtotal,
+        });
+
+        totalAmount += subtotal;
+      }
+    });
+
+    if (selectedServices.length === 0) {
+      status.textContent =
+        "Please enter quantity for at least one service";
+      status.style.color = "red";
+      return;
+    }
+
+    const pending = {
+      services: selectedServices,
+      totalAmount,
+      createdAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem("pendingTransaction", JSON.stringify(pending));
+
+    window.location.href = "transactionDetails.html";
   });
 
   const resetBtn = document.querySelector('button[type="reset"]');
@@ -250,7 +320,7 @@ async function loadServices() {
         }
       });
     });
-    
+
   } catch (error) {
     console.error("Error loading services:", error);
     servicesList.innerHTML = "<p>Error loading services</p>";
@@ -287,7 +357,7 @@ async function submitTransaction(user, statusElement) {
     if (checkboxes.length === 0) {
       statusElement.textContent = "Please select at least one service";
       statusElement.style.color = "red";
-      return;
+      return false;
     }
 
     const selectedServices = [];
@@ -317,7 +387,7 @@ async function submitTransaction(user, statusElement) {
       statusElement.textContent =
         "Please enter quantity for at least one service";
       statusElement.style.color = "red";
-      return;
+      return false;
     }
 
     statusElement.textContent = "Processing transaction...";
@@ -368,21 +438,337 @@ async function submitTransaction(user, statusElement) {
     statusElement.style.color = "green";
 
     document.getElementById("serviceForm").reset();
-
-    document.querySelectorAll('input[name="service"]').forEach((checkbox) => {
-      const serviceId = checkbox.value;
-      const qty = document.getElementById(`quantity_${serviceId}`);
-      qty.disabled = !checkbox.checked;
-      qty.value = checkbox.checked ? 1 : 0;
-    });
-
     document.querySelectorAll('input[type="number"]').forEach((input) => {
-      input.disabled = false;
+      input.disabled = true;
     });
+
+    return true; 
   } catch (error) {
     console.error("Transaction error:", error);
     statusElement.textContent = "Transaction failed: " + error.message;
     statusElement.style.color = "red";
+    return false; 
+  }
+}
+
+async function initTransactionDetailsPage() {
+  const userJson = localStorage.getItem("currentUser");
+  if (!userJson) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  const user = JSON.parse(userJson);
+  const status = document.getElementById("tdStatus");
+
+ 
+  const pendingJson = localStorage.getItem("pendingTransaction");
+  if (!pendingJson) {
+    if (status) {
+      status.textContent = "No pending transaction found.";
+    }
+    return;
+  }
+
+  const pending = JSON.parse(pendingJson);
+
+  
+  setTextIfExists("tdUserId", user.user_id || "N/A");
+  setTextIfExists("tdLastName", user.last_name || "N/A");
+  setTextIfExists("tdGivenName", user.given_name || "N/A");
+  setTextIfExists("tdMiddleName", user.middle_name || "N/A");
+  setTextIfExists("tdProgram", user.program || "N/A");
+  setTextIfExists("tdYear", user.year || "N/A");
+  setTextIfExists("tdSchoolYear", getCurrentSchoolYear());
+  setTextIfExists("tdTerm", getCurrentTerm());
+  setTextIfExists(
+    "tdDateTime",
+    pending.createdAt ? new Date(pending.createdAt).toLocaleString() : "N/A"
+  );
+
+  const statusTextEl = document.getElementById("tdStatusText");
+  if (statusTextEl) {
+    statusTextEl.textContent = "Pending (not yet submitted)";
+  }
+
+  const services = pending.services || [];
+  const totalAmount = pending.totalAmount || 0;
+
+  setTextIfExists("tdTotalAmount", `₱${Number(totalAmount).toFixed(2)}`);
+
+  try {
+    const servicesContainer = document.getElementById("tdServices");
+    if (servicesContainer && services.length > 0) {
+      const serviceIds = services.map((s) => s.service_id);
+
+      const { data: serviceTypes, error: svcError } = await supabase
+        .from("service_type")
+        .select("*")
+        .in("service_id", serviceIds);
+
+      if (svcError) {
+        console.error("Error fetching service types:", svcError);
+        servicesContainer.textContent = "Error loading services.";
+      } else {
+        const mapById = {};
+        (serviceTypes || []).forEach((svc) => {
+          mapById[svc.service_id] = svc;
+        });
+
+        const list = document.createElement("ul");
+
+        services.forEach((item) => {
+          const svc = mapById[item.service_id];
+          const li = document.createElement("li");
+          const name = svc ? svc.servicename : `Service ${item.service_id}`;
+          const price = svc ? svc.unitprice : "";
+          li.textContent = `${name} (Qty: ${item.quantity}, Total: ₱${Number(
+            item.total
+          ).toFixed(2)}${price !== "" ? `, Unit: ₱${price}` : ""})`;
+          list.appendChild(li);
+        });
+
+        servicesContainer.innerHTML = "";
+        servicesContainer.appendChild(list);
+      }
+    }
+
+    const confirmBtn = document.getElementById("confirmTransactionBtn");
+    if (confirmBtn) {
+      confirmBtn.addEventListener("click", async () => {
+        const ok = window.confirm("Submit this transaction?");
+
+        if (!ok) {
+          return;
+        }
+
+        const success = await submitPendingTransaction(
+          user,
+          pending,
+          status || document.body
+        );
+        if (success) {
+          localStorage.removeItem("pendingTransaction");
+          if (statusTextEl) {
+            statusTextEl.textContent = "Submitted to server";
+          }
+
+          window.alert("Your transaction is being processed");
+          window.location.href = "transactionStatus.html";
+        }
+      });
+    }
+  } catch (err) {
+    console.error("Unexpected error loading transaction details:", err);
+    if (status) {
+      status.textContent = "Unexpected error loading transaction details.";
+    }
+  }
+}
+
+async function submitPendingTransaction(user, pending, statusElement) {
+  try {
+    const selectedServices = pending.services || [];
+    const totalAmount = pending.totalAmount || 0;
+
+    if (!selectedServices.length || totalAmount <= 0) {
+      statusElement.textContent = "Invalid pending transaction.";
+      statusElement.style.color = "red";
+      return false;
+    }
+
+    statusElement.textContent = "Processing transaction...";
+    statusElement.style.color = "blue";
+
+    const { data: transaction, error: transactionError } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: user.user_id,
+        date_time: new Date().toISOString(),
+        school_year: getCurrentSchoolYear(),
+        term: getCurrentTerm(),
+        processed_by: null,
+        status: "Pending",
+      })
+      .select()
+      .single();
+
+    if (transactionError) {
+      throw new Error(
+        "Failed to create transaction: " + transactionError.message
+      );
+    }
+
+    const { error: detailsError } = await supabase
+      .from("transaction_detail")
+      .insert({
+        transaction_id: transaction.transaction_id,
+        services: selectedServices,
+        total_amount: totalAmount,
+      });
+
+    if (detailsError) {
+      throw new Error(
+        "Failed to save transaction details: " + detailsError.message
+      );
+    }
+
+    console.log("Transaction submitted successfully!", transaction);
+    statusElement.textContent = "Transaction submitted successfully!";
+    statusElement.style.color = "green";
+    return true;
+  } catch (error) {
+    console.error("Transaction error:", error);
+    statusElement.textContent = "Transaction failed: " + error.message;
+    statusElement.style.color = "red";
+    return false;
+  }
+}
+
+async function initTransactionStatusPage() {
+  const userJson = localStorage.getItem("currentUser");
+  if (!userJson) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  const user = JSON.parse(userJson);
+  const listContainer = document.getElementById("txStatusList");
+  const messageEl = document.getElementById("txStatusMessage");
+  const makeAnotherBtn = document.getElementById("makeAnotherTransactionBtn");
+
+  try {
+  
+    const { data: transactions, error: txError } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("user_id", user.user_id)
+      .order("date_time", { ascending: false });
+
+    if (txError) {
+      console.error("Error fetching transactions:", txError);
+      if (messageEl) {
+        messageEl.textContent = "Error loading transactions.";
+      }
+      return;
+    }
+
+    if (!transactions || transactions.length === 0) {
+      if (messageEl) {
+        messageEl.textContent = "No transactions found.";
+      }
+      return;
+    }
+
+    const txIds = transactions.map((t) => t.transaction_id);
+
+    
+    const { data: details, error: detailError } = await supabase
+      .from("transaction_detail")
+      .select("*")
+      .in("transaction_id", txIds);
+
+    if (detailError) {
+      console.error("Error fetching transaction details:", detailError);
+      if (messageEl) {
+        messageEl.textContent = "Error loading transaction details.";
+      }
+      return;
+    }
+
+    const detailByTxId = {};
+    (details || []).forEach((d) => {
+      detailByTxId[d.transaction_id] = d;
+    });
+
+    // Collect all service IDs used across all transactions
+    const allServiceIdsSet = new Set();
+    (details || []).forEach((d) => {
+      (d.services || []).forEach((s) => {
+        allServiceIdsSet.add(s.service_id);
+      });
+    });
+
+    let serviceTypeById = {};
+    if (allServiceIdsSet.size > 0) {
+      const allServiceIds = Array.from(allServiceIdsSet);
+
+      const { data: serviceTypes, error: svcError } = await supabase
+        .from("service_type")
+        .select("*")
+        .in("service_id", allServiceIds);
+
+      if (svcError) {
+        console.error("Error fetching service types:", svcError);
+      } else {
+        (serviceTypes || []).forEach((svc) => {
+          serviceTypeById[svc.service_id] = svc;
+        });
+      }
+    }
+
+    if (!listContainer) return;
+
+    const fragment = document.createDocumentFragment();
+
+    transactions.forEach((tx) => {
+      const detail = detailByTxId[tx.transaction_id];
+      const services = detail?.services || [];
+      const totalAmount = detail?.total_amount ?? 0;
+
+      const wrapper = document.createElement("div");
+
+      const header = document.createElement("p");
+      header.textContent = `Transaction ID: ${tx.transaction_id} | User ID: ${tx.user_id} | Processed By: ${
+        tx.processed_by || "N/A"
+      } | Status: ${tx.status || "N/A"} | Date: ${
+        tx.date_time ? new Date(tx.date_time).toLocaleString() : "N/A"
+      }`;
+      wrapper.appendChild(header);
+
+      const servicesTitle = document.createElement("p");
+      servicesTitle.textContent = "Services:";
+      wrapper.appendChild(servicesTitle);
+
+      if (services.length > 0) {
+        const ul = document.createElement("ul");
+        services.forEach((item) => {
+          const li = document.createElement("li");
+          const svc = serviceTypeById[item.service_id];
+          const name = svc ? svc.servicename : `Service ${item.service_id}`;
+          const price = svc ? svc.unitprice : "";
+          li.textContent = `${name} (Qty: ${item.quantity}, Total: ₱${Number(
+            item.total
+          ).toFixed(2)}${price !== "" ? `, Unit: ₱${price}` : ""})`;
+          ul.appendChild(li);
+        });
+        wrapper.appendChild(ul);
+      } else {
+        const noServices = document.createElement("p");
+        noServices.textContent = "No services recorded.";
+        wrapper.appendChild(noServices);
+      }
+
+      const totalP = document.createElement("p");
+      totalP.textContent = `Total: ₱${Number(totalAmount).toFixed(2)}`;
+      wrapper.appendChild(totalP);
+
+      fragment.appendChild(wrapper);
+    });
+
+    listContainer.innerHTML = "";
+    listContainer.appendChild(fragment);
+
+    if (makeAnotherBtn) {
+      makeAnotherBtn.addEventListener("click", () => {
+        window.location.href = "dashboard.html";
+      });
+    }
+  } catch (err) {
+    console.error("Unexpected error loading transaction status:", err);
+    if (messageEl) {
+      messageEl.textContent = "Unexpected error loading transaction status.";
+    }
   }
 }
 
