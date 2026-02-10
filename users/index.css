@@ -26,10 +26,13 @@ body {
 
 .img-logo {
   background-color: #fef6dc;
-  width: 30%;
+  width: 20%;
   margin-top: 2%;
   margin-left: 40%;
+  margin-left: 40%;
   border-radius: 50%;
+  height: 30%;
+  width: 25%;
   height: 30%;
   width: 25%;
 }

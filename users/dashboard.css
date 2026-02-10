@@ -1,0 +1,121 @@
+/* For dashboard.html */
+
+body {
+  background: linear-gradient(270deg, #730400 62.02%, #630700 100%);
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  justify-content: center;
+  align-items: center;
+}
+
+.dashboard-container {
+  width: 30vw;
+  height: 90vh;
+  background-color: #730400;
+  border-radius: 5%;
+  border-color: #fef6dc;
+  border-style: solid;
+  -webkit-filter: drop-shadow(0 4px 100px rgba(0, 0, 0, 0.8));
+  -webkit-backdrop-filter: blur(50px);
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+h1 {
+  color: #fef6dc;
+  font-size: 3em;
+  width: 100%;
+  height: fit-content;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.service-type {
+  width: 80%;
+  height: 70%;
+  background-color: #730400;
+  border-radius: 5%;
+  border-color: #fef6dc;
+  border-style: solid;
+  -webkit-filter: drop-shadow(0 4px 100px rgba(0, 0, 0, 0.8));
+  -webkit-backdrop-filter: blur(50px);
+  overflow: hidden;
+  margin-left: 10%;
+  margin-right: 10%;
+}
+
+h2 {
+  color: #fef6dc;
+  font-size: 2rem;
+  width: 100%;
+  height: fit-content;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+#serviceForm {
+  width: 100%;
+  height: fit-content;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  display: inline-block;
+  block-size: auto;
+}
+
+.service-holder {
+  width: 90%;
+  height: fit-content;
+  align-items: center;
+  justify-content: center;
+  text-align: left;
+  display: inline-block;
+  block-size: auto;
+  background-color: #fef6dc;
+  border-radius: 5%;
+  padding-top: 5%;
+  padding-bottom: 5%;
+  padding-right: 2%;
+}
+
+.checkbox {
+  width: 3vw;
+  height: 3vh;
+  display: inline-block;
+}
+
+.service-name {
+  font-size: 1rem;
+  color: #730400;
+  font-weight: 700;
+}
+
+.servicename-holder {
+  display: inline-block;
+  width: 15vw;
+  height: fit-content;
+}
+
+.service-qty {
+  width: 2vw;
+  height: 3vh;
+  display: inline-block;
+}
+
+.btn-holder {
+  width: 100%;
+  height: fit-content;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  display: inline-block;
+  block-size: auto;
+  background-color: aqua;
+  margin-top: 5%;
+}
