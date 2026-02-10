@@ -1,6 +1,12 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_CONFIG } from "../config.js";
 
+const link = document.createElement("link");
+link.rel = "stylesheet";
+link.href = "dashboard.css";
+
+document.head.appendChild(link);
+
 const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 
 const currentPage = window.location.pathname.split("/").pop();
@@ -209,9 +215,11 @@ async function loadServices() {
       .map(
         (service) => `
             <div>
-                <input type="checkbox" id="service_${service.service_id}" name="service" value="${service.service_id}" data-price="${service.unitprice}">
-                <label for="service_${service.service_id}">${service.servicename} - ₱${service.unitprice}</label>
-                <input type="number" id="quantity_${service.service_id}" min="0" value="0" disabled>
+                <input class="checkbox" type="checkbox" id="service_${service.service_id}" name="service" value="${service.service_id}" data-price="${service.unitprice}">
+                <div class="servicename-holder">
+                  <label class="service-name"for="service_${service.service_id}">${service.servicename} - ₱${service.unitprice}</label>
+                </div>
+                <input class="service-qty" type="number" id="quantity_${service.service_id}" min="0" value="0" disabled>
             </div>
         `
       )

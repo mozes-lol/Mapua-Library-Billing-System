@@ -69,15 +69,53 @@ h2 {
   block-size: auto;
 }
 
-.service-item {
-  align-items: center;
-  height: fit-content;
+.service-holder {
   width: 90%;
+  height: fit-content;
+  align-items: center;
   justify-content: center;
+  text-align: left;
   display: inline-block;
+  block-size: auto;
+  background-color: #fef6dc;
+  border-radius: 5%;
+  padding-top: 5%;
+  padding-bottom: 5%;
+  padding-right: 2%;
 }
 
 .checkbox {
   width: 3vw;
   height: 3vh;
+  display: inline-block;
+}
+
+.service-name {
+  font-size: 1rem;
+  color: #730400;
+  font-weight: 700;
+}
+
+.servicename-holder {
+  display: inline-block;
+  width: 15vw;
+  height: fit-content;
+}
+
+.service-qty {
+  width: 2vw;
+  height: 3vh;
+  display: inline-block;
+}
+
+.btn-holder {
+  width: 100%;
+  height: fit-content;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  display: inline-block;
+  block-size: auto;
+  background-color: aqua;
+  margin-top: 5%;
 }
