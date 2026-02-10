@@ -119,6 +119,9 @@ function initDashboardPage() {
     // Dynamically create and show users table for admin only
     createUsersTableHTML();
     loadUsersTable();
+    // Add transactions table for admin
+    createTransactionsTableHTML();
+    loadTransactionsTable();
   }
 
   loadServices();
@@ -280,6 +283,261 @@ function createUsersTableHTML() {
   document.getElementById("addUserBtn").addEventListener("click", openAddUserForm);
   document.getElementById("cancelFormBtn").addEventListener("click", closeUserForm);
   document.getElementById("userForm").addEventListener("submit", handleUserFormSubmit);
+}
+
+function createTransactionsTableHTML() {
+  const adminContent = document.getElementById("adminOnlyContent");
+  const transactionsSection = `
+    <div id="transactionsTableSection" style="margin: 20px 0;">
+      <h3>Transactions Table</h3>
+      <div style="overflow-x: auto;">
+        <table id="transactionsTable" border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+          <thead style="background-color: #2196F3; color: white;">
+            <tr>
+              <th>Transaction ID</th>
+              <th>Transaction Code</th>
+              <th>User ID</th>
+              <th>User Name</th>
+              <th>Date & Time</th>
+              <th>School Year</th>
+              <th>Term</th>
+              <th>Status</th>
+              <th>Processed By</th>
+              <th>Total Amount</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="transactionsTableBody">
+            <tr><td colspan="11" style="text-align: center;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="transactionCrudStatus" style="margin-top: 10px; font-weight: bold;"></p>
+    </div>
+    
+    <!-- Transaction Details Modal -->
+    <div id="transactionDetailsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+      <div style="background-color: white; margin: 50px auto; padding: 30px; width: 700px; border-radius: 10px; max-height: 80vh; overflow-y: auto;">
+        <h2>Transaction Details</h2>
+        <div id="transactionDetailsContent" style="margin: 20px 0;">
+          <p><strong>Transaction ID:</strong> <span id="detailTransactionId"></span></p>
+          <p><strong>Transaction Code:</strong> <span id="detailTransactionCode"></span></p>
+          <p><strong>User:</strong> <span id="detailUserName"></span></p>
+          <p><strong>Date & Time:</strong> <span id="detailDateTime"></span></p>
+          <p><strong>School Year:</strong> <span id="detailSchoolYear"></span></p>
+          <p><strong>Term:</strong> <span id="detailTerm"></span></p>
+          <p><strong>Status:</strong> <span id="detailStatus"></span></p>
+          <p><strong>Processed By:</strong> <span id="detailProcessedBy"></span></p>
+          <hr style="margin: 20px 0;">
+          <h3>Services</h3>
+          <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead style="background-color: #f0f0f0;">
+              <tr>
+                <th>Service Name</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="detailServicesTable">
+            </tbody>
+          </table>
+          <p style="margin-top: 15px; font-size: 18px; font-weight: bold; text-align: right;">Grand Total: ₱<span id="detailGrandTotal"></span></p>
+        </div>
+        <button id="closeDetailsBtn" style="background-color: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px;">Close</button>
+      </div>
+    </div>
+  `;
+  
+  adminContent.insertAdjacentHTML('beforeend', transactionsSection);
+  
+  document.getElementById("closeDetailsBtn").addEventListener("click", closeTransactionDetails);
+}
+
+async function loadTransactionsTable() {
+  const tableBody = document.getElementById("transactionsTableBody");
+
+  try {
+    // Fetch transactions
+    const { data: transactions, error: transactionsError } = await supabase
+      .from("transactions")
+      .select("*")
+      .order("transaction_id", { ascending: false });
+
+    if (transactionsError) {
+      console.error("Error fetching transactions:", transactionsError);
+      tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: red;">Error loading transactions</td></tr>';
+      return;
+    }
+
+    if (!transactions || transactions.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center;">No transactions found</td></tr>';
+      return;
+    }
+
+    const userIds = [...new Set(transactions.map((t) => t.user_id).filter(Boolean))];
+    let usersById = {};
+
+    if (userIds.length > 0) {
+      const { data: users, error: usersError } = await supabase
+        .from("users")
+        .select("user_id, given_name, last_name")
+        .in("user_id", userIds);
+
+      if (usersError) {
+        console.error("Error fetching users:", usersError);
+      } else {
+        usersById = users.reduce((acc, user) => {
+          acc[user.user_id] = user;
+          return acc;
+        }, {});
+      }
+    }
+
+    // Fetch transaction details for all transactions
+    const { data: allDetails, error: detailsError } = await supabase
+      .from("transaction_detail")
+      .select("*");
+
+    if (detailsError) {
+      console.error("Error fetching transaction details:", detailsError);
+    }
+
+    // Create a map of transaction_id to total_amount
+    const detailsMap = {};
+    if (allDetails) {
+      allDetails.forEach((detail) => {
+        detailsMap[detail.transaction_id] = detail.total_amount;
+      });
+    }
+
+    tableBody.innerHTML = transactions
+      .map(
+        (transaction) => {
+          const user = usersById[transaction.user_id];
+          const userName = user ? `${user.given_name} ${user.last_name}` : "N/A";
+          const dateTime = new Date(transaction.date_time).toLocaleString();
+          const totalAmount = detailsMap[transaction.transaction_id] || 0;
+          const statusColor = transaction.status === "Pending" ? "#ff9800" : 
+                             transaction.status === "Approved" ? "#4CAF50" : "#f44336";
+          
+          return `
+            <tr>
+                <td>${transaction.transaction_id}</td>
+                <td>${transaction.transaction_code || "N/A"}</td>
+                <td>${transaction.user_id}</td>
+                <td>${userName}</td>
+                <td>${dateTime}</td>
+                <td>${transaction.school_year || "N/A"}</td>
+                <td>${transaction.term || "N/A"}</td>
+                <td style="color: ${statusColor}; font-weight: bold;">${transaction.status || "N/A"}</td>
+                <td>${transaction.processed_by || "N/A"}</td>
+                <td>₱${totalAmount.toFixed(2)}</td>
+                <td>
+                    <button onclick="viewTransactionDetails(${transaction.transaction_id})" style="background-color: #2196F3; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;">View/Process Details</button>
+                </td>
+            </tr>
+          `;
+        }
+      )
+      .join("");
+  } catch (error) {
+    console.error("Error loading transactions:", error);
+    tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: red;">Error loading transactions</td></tr>';
+  }
+}
+
+window.viewTransactionDetails = async function(transactionId) {
+  try {
+    // Fetch transaction
+    const { data: transaction, error: transactionError } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("transaction_id", transactionId)
+      .single();
+
+    if (transactionError) throw transactionError;
+
+    // Fetch transaction details
+    const { data: details, error: detailsError } = await supabase
+      .from("transaction_detail")
+      .select("*")
+      .eq("transaction_id", transactionId)
+      .single();
+
+    if (detailsError) throw detailsError;
+
+    // Fetch all services to map service_id to service name
+    const { data: services, error: servicesError } = await supabase
+      .from("service_type")
+      .select("*");
+
+    if (servicesError) throw servicesError;
+
+    // Create a map of service_id to service info
+    const servicesMap = {};
+    services.forEach(service => {
+      servicesMap[service.service_id] = service;
+    });
+
+    let userName = "N/A";
+    if (transaction.user_id) {
+      const { data: user, error: userError } = await supabase
+        .from("users")
+        .select("given_name, middle_name, last_name")
+        .eq("user_id", transaction.user_id)
+        .single();
+
+      if (userError) {
+        console.error("Error fetching user:", userError);
+      } else if (user) {
+        userName = `${user.given_name} ${user.middle_name || ""} ${user.last_name}`
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+    }
+
+    document.getElementById("detailTransactionId").textContent = transaction.transaction_id;
+    document.getElementById("detailTransactionCode").textContent = transaction.transaction_code || "N/A";
+    document.getElementById("detailUserName").textContent = userName;
+    document.getElementById("detailDateTime").textContent = new Date(transaction.date_time).toLocaleString();
+    document.getElementById("detailSchoolYear").textContent = transaction.school_year || "N/A";
+    document.getElementById("detailTerm").textContent = transaction.term || "N/A";
+    document.getElementById("detailStatus").textContent = transaction.status || "N/A";
+    document.getElementById("detailProcessedBy").textContent = transaction.processed_by || "Not processed yet";
+    document.getElementById("detailGrandTotal").textContent = details.total_amount.toFixed(2);
+
+    // Populate services table
+    const servicesTableBody = document.getElementById("detailServicesTable");
+    servicesTableBody.innerHTML = details.services
+      .map(service => {
+        const serviceInfo = servicesMap[service.service_id];
+        const serviceName = serviceInfo ? serviceInfo.servicename : `Service ID: ${service.service_id}`;
+        const unitPrice = serviceInfo ? serviceInfo.unitprice : (service.total / service.quantity);
+        
+        return `
+          <tr>
+            <td>${serviceName}</td>
+            <td>${service.quantity}</td>
+            <td>₱${unitPrice.toFixed(2)}</td>
+            <td>₱${service.total.toFixed(2)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    // Show modal
+    document.getElementById("transactionDetailsModal").style.display = "block";
+  } catch (error) {
+    console.error("Error fetching transaction details:", error);
+    const statusElement = document.getElementById("transactionCrudStatus");
+    statusElement.textContent = "Error loading transaction details: " + error.message;
+    statusElement.style.color = "red";
+  }
+}
+
+function closeTransactionDetails() {
+  document.getElementById("transactionDetailsModal").style.display = "none";
 }
 
 async function loadUsersTable() {
