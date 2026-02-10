@@ -110,16 +110,10 @@ function initDashboardPage() {
   document.getElementById("userDepartment").textContent =
     user.department || "N/A";
 
-  // Check if user is admin and show message
+  // Check if user is admin and show admin-only sections
   if (user.role && user.role.toLowerCase() === "admin") {
-    document.getElementById("adminMessage").style.display = "block";
-    // Show database information for admin
-    document.getElementById("databaseInfo").style.display = "block";
-    document.getElementById("dbUrl").textContent = SUPABASE_CONFIG.url;
-    // Dynamically create and show users table for admin only
     createUsersTableHTML();
     loadUsersTable();
-    // Add transactions table for admin
     createTransactionsTableHTML();
     loadTransactionsTable();
   }
