@@ -22,7 +22,7 @@ function initLoginPage() {
 
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    
+
     // Show loading spinner
     loadingText.textContent = "Logging in...";
     loadingOverlay.style.display = "flex";
@@ -79,17 +79,17 @@ function initLoginPage() {
       localStorage.setItem("currentUser", JSON.stringify(user));
 
       loadingText.textContent = "Login successful! Redirecting...";
-      
+
       setTimeout(() => {
         window.location.href = "dashboard.html";
       }, 1000);
     } catch (error) {
       console.error("Login error:", error);
-      
+
       // Hide loading spinner on error
       loadingOverlay.style.display = "none";
       submitBtn.disabled = false;
-      
+
       status.textContent = "Login failed: " + error.message;
       status.style.color = "red";
     }
@@ -120,7 +120,7 @@ function initDashboardPage() {
   setTextIfExists("userProgram", user.program || "N/A");
   setTextIfExists("userYear", user.year || "N/A");
   setTextIfExists("userDepartment", user.department || "N/A");
-  
+
   console.log(user.email_address, user.role);
 
   loadServices();
@@ -179,7 +179,6 @@ function resetServices() {
     serviceForm.reset();
   }
 
-  
   const status = document.getElementById("status");
   if (status) {
     status.textContent = "";
@@ -348,8 +347,6 @@ async function submitTransaction(user, statusElement) {
   }
 }
 
-
-
 function getCurrentSchoolYear() {
   const now = new Date();
   const year = now.getFullYear();
@@ -392,5 +389,3 @@ async function checkIfLoggedIn() {
     }
   }
 }
-
-

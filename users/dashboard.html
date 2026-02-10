@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mapua Library Billing System</title>
     <link rel="stylesheet" href="dashboard.css" />
-</head>
-<body>
+  </head>
+  <body>
     <!-- <div id="userInfo">
         <p><strong>User ID:</strong> <span id="userId"></span></p>
         <p><strong>Name:</strong> <span id="userName"></span></p>
@@ -17,20 +17,25 @@
         <p><strong>Department:</strong> <span id="userDepartment"></span></p>
     </div>
      -->
-    
-    <h1>Avail Services</h1>
-    <form id="serviceForm">
-        <div id="servicesList"></div>
-            <br>
-                <button type="submit">Submit Transaction</button>
-                <button type="reset">Reset</button>
-    </form>
-    
-    <br>
-        <button id="logoutBtn">Logout</button>
-    
-    <p id="status"></p>
+    <div class="index-container">
+      <h1>Services</h1>
 
+      <div class="service-type">
+        <h2>Service Type</h2>
+
+        <form id="serviceForm">
+          <div id="servicesList"></div>
+          <br />
+          <button type="submit">Submit Transaction</button>
+          <button type="reset">Reset</button>
+        </form>
+      </div>
+
+      <br />
+      <button id="logoutBtn">Logout</button>
+
+      <p id="status"></p>
+    </div>
     <script type="module" src="app.js"></script>
-</body>
+  </body>
 </html>
