@@ -29,45 +29,33 @@ if (currentPage === "index.html" || currentPage === "") {
   initTransactionDetailsPage();
 } else if (currentPage === "transactionStatus.html") {
   initTransactionStatusPage();
-} else if (currentPage === "transactionDetails.html") {
-  initTransactionDetailsPage();
-} else if (currentPage === "transactionStatus.html") {
-  initTransactionStatusPage();
 }
 
 function initLoginPage() {
   const loginForm = document.getElementById("loginForm");
   const status = document.getElementById("status");
   const loadingOverlay = document.getElementById("loadingOverlay");
-  const loadingText = loadingOverlay.querySelector(".loading-text");
-  const submitBtn = document.querySelector(".submit-btn");
-  const loadingOverlay = document.getElementById("loadingOverlay");
-  const loadingText = loadingOverlay.querySelector(".loading-text");
+  const loadingText = loadingOverlay?.querySelector(".loading-text");
   const submitBtn = document.querySelector(".submit-btn");
 
   checkIfLoggedIn();
+
+  if (!loginForm) return;
 
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     // Show loading spinner
-    loadingText.textContent = "Logging in...";
-    loadingOverlay.style.display = "flex";
-    submitBtn.disabled = true;
-    status.textContent = "";
+    if (loadingText) loadingText.textContent = "Logging in...";
+    if (loadingOverlay) loadingOverlay.style.display = "flex";
+    if (submitBtn) submitBtn.disabled = true;
+    if (status) status.textContent = "";
 
-    // Show loading spinner
-    loadingText.textContent = "Logging in...";
-    loadingOverlay.style.display = "flex";
-    submitBtn.disabled = true;
-    status.textContent = "";
-
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    const email = document.getElementById("email")?.value;
+    const password = document.getElementById("password")?.value;
 
     try {
-      loadingText.textContent = "Authenticating...";
-      loadingText.textContent = "Authenticating...";
+      if (loadingText) loadingText.textContent = "Authenticating...";
 
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({
@@ -80,8 +68,7 @@ function initLoginPage() {
         throw new Error("Authentication failed: " + authError.message);
       }
 
-      loadingText.textContent = "Fetching user data...";
-      loadingText.textContent = "Fetching user data...";
+      if (loadingText) loadingText.textContent = "Fetching user data...";
       console.log("Auth successful, fetching user data for:", email);
 
       const { data: userData, error: userError } = await supabase
@@ -189,7 +176,7 @@ function initDashboardPage() {
     loadTransactionsTable();
 
     if (servicesSection) {
-      servicesSection.style.display = "none";
+      servicesSection.remove();
     }
   } else if (isAdmin) {
     createServiceTypesTableHTML();
@@ -198,7 +185,7 @@ function initDashboardPage() {
     loadTransactionsTable();
 
     if (servicesSection) {
-      servicesSection.style.display = "none";
+      servicesSection.remove();
     }
   } else if (isRegularUser) {
     if (adminContent) {
@@ -299,28 +286,6 @@ function setTextIfExists(elementId, value) {
   const element = document.getElementById(elementId);
   if (element) {
     element.textContent = value;
-  }
-}
-
-function resetServices() {
-  document.querySelectorAll('input[name="service"]').forEach((checkbox) => {
-    checkbox.checked = false;
-    const serviceId = checkbox.value;
-    const quantityInput = document.getElementById(`quantity_${serviceId}`);
-    if (quantityInput) {
-      quantityInput.disabled = true;
-      quantityInput.value = 0;
-    }
-  });
-
-  const serviceForm = document.getElementById("serviceForm");
-  if (serviceForm) {
-    serviceForm.reset();
-  }
-
-  const status = document.getElementById("status");
-  if (status) {
-    status.textContent = "";
   }
 }
 
@@ -1413,355 +1378,6 @@ async function submitTransaction(user, statusElement) {
     statusElement.textContent = "Transaction failed: " + error.message;
     statusElement.style.color = "red";
     return false; 
-  }
-}
-
-async function initTransactionDetailsPage() {
-  const userJson = localStorage.getItem("currentUser");
-  if (!userJson) {
-    window.location.href = "index.html";
-    return;
-  }
-
-  const user = JSON.parse(userJson);
-  const status = document.getElementById("tdStatus");
-
- 
-  const pendingJson = localStorage.getItem("pendingTransaction");
-  if (!pendingJson) {
-    if (status) {
-      status.textContent = "No pending transaction found.";
-    }
-    return;
-  }
-
-  const pending = JSON.parse(pendingJson);
-
-  
-  setTextIfExists("tdUserId", user.user_id || "N/A");
-  setTextIfExists("tdLastName", user.last_name || "N/A");
-  setTextIfExists("tdGivenName", user.given_name || "N/A");
-  setTextIfExists("tdMiddleName", user.middle_name || "N/A");
-  setTextIfExists("tdProgram", user.program || "N/A");
-  setTextIfExists("tdYear", user.year || "N/A");
-  setTextIfExists("tdSchoolYear", getCurrentSchoolYear());
-  setTextIfExists("tdTerm", getCurrentTerm());
-  setTextIfExists(
-    "tdDateTime",
-    pending.createdAt ? new Date(pending.createdAt).toLocaleString() : "N/A"
-  );
-
-  const statusTextEl = document.getElementById("tdStatusText");
-  if (statusTextEl) {
-    statusTextEl.textContent = "Pending (not yet submitted)";
-  }
-
-  const services = pending.services || [];
-  const totalAmount = pending.totalAmount || 0;
-
-  setTextIfExists("tdTotalAmount", `₱${Number(totalAmount).toFixed(2)}`);
-
-  try {
-    const servicesContainer = document.getElementById("tdServices");
-    if (servicesContainer && services.length > 0) {
-      const serviceIds = services.map((s) => s.service_id);
-
-      const { data: serviceTypes, error: svcError } = await supabase
-        .from("service_type")
-        .select("*")
-        .in("service_id", serviceIds);
-
-      if (svcError) {
-        console.error("Error fetching service types:", svcError);
-        servicesContainer.textContent = "Error loading services.";
-      } else {
-        const mapById = {};
-        (serviceTypes || []).forEach((svc) => {
-          mapById[svc.service_id] = svc;
-        });
-
-        const list = document.createElement("ul");
-
-        services.forEach((item) => {
-          const svc = mapById[item.service_id];
-          const li = document.createElement("li");
-          const name = svc ? svc.servicename : `Service ${item.service_id}`;
-          const price = svc ? svc.unitprice : "";
-          li.textContent = `${name} (Qty: ${item.quantity}, Total: ₱${Number(
-            item.total
-          ).toFixed(2)}${price !== "" ? `, Unit Price: ₱${price}` : ""})`;
-          list.appendChild(li);
-        });
-
-        servicesContainer.innerHTML = "";
-        servicesContainer.appendChild(list);
-      }
-    }
-
-    const confirmBtn = document.getElementById("confirmTransactionBtn");
-    if (confirmBtn) {
-      confirmBtn.addEventListener("click", async () => {
-        const ok = window.confirm("Submit this transaction?");
-
-        if (!ok) {
-          return;
-        }
-
-        const success = await submitPendingTransaction(
-          user,
-          pending,
-          status || document.body
-        );
-        if (success) {
-          localStorage.removeItem("pendingTransaction");
-          if (statusTextEl) {
-            statusTextEl.textContent = "Submitted to server";
-          }
-
-          window.alert("Your transaction is being processed");
-          window.location.href = "transactionStatus.html";
-        }
-      });
-    }
-  } catch (err) {
-    console.error("Unexpected error loading transaction details:", err);
-    if (status) {
-      status.textContent = "Unexpected error loading transaction details.";
-    }
-  }
-}
-
-async function submitPendingTransaction(user, pending, statusElement) {
-  try {
-    const selectedServices = pending.services || [];
-    const totalAmount = pending.totalAmount || 0;
-
-    if (!selectedServices.length || totalAmount <= 0) {
-      statusElement.textContent = "Invalid pending transaction.";
-      statusElement.style.color = "red";
-      return false;
-    }
-
-    statusElement.textContent = "Processing transaction...";
-    statusElement.style.color = "blue";
-
-    const { data: transaction, error: transactionError } = await supabase
-      .from("transactions")
-      .insert({
-        user_id: user.user_id,
-        date_time: new Date().toISOString(),
-        school_year: getCurrentSchoolYear(),
-        term: getCurrentTerm(),
-        processed_by: null,
-        status: "Pending",
-      })
-      .select()
-      .single();
-
-    if (transactionError) {
-      throw new Error(
-        "Failed to create transaction: " + transactionError.message
-      );
-    }
-
-    const { error: detailsError } = await supabase
-      .from("transaction_detail")
-      .insert({
-        transaction_id: transaction.transaction_id,
-        services: selectedServices,
-        total_amount: totalAmount,
-      });
-
-    if (detailsError) {
-      throw new Error(
-        "Failed to save transaction details: " + detailsError.message
-      );
-    }
-
-    console.log("Transaction submitted successfully!", transaction);
-    statusElement.textContent = "Transaction submitted successfully!";
-    statusElement.style.color = "green";
-    return true;
-  } catch (error) {
-    console.error("Transaction error:", error);
-    statusElement.textContent = "Transaction failed: " + error.message;
-    statusElement.style.color = "red";
-    return false;
-  }
-}
-
-async function initTransactionStatusPage() {
-  const userJson = localStorage.getItem("currentUser");
-  if (!userJson) {
-    window.location.href = "index.html";
-    return;
-  }
-
-  const user = JSON.parse(userJson);
-  const listContainer = document.getElementById("txStatusList");
-  const messageEl = document.getElementById("txStatusMessage");
-  const makeAnotherBtn = document.getElementById("makeAnotherTransactionBtn");
-
-  try {
-
-    let queueText = "";
-    const { data: pendingCustomer, error: pendingError } = await supabase
-      .from("transactions")
-      .select("transaction_id,user_id,status,date_time")
-      .eq("status", "Pending")
-      .order("date_time", { ascending: true });
-
-    if (!pendingError && pendingCustomer && pendingCustomer.length > 0) {
-      const userPending = pendingCustomer.filter(
-        (tx) => tx.user_id === user.user_id
-      );
-      if (userPending.length > 0) {
-        const latestUserPending = userPending[userPending.length - 1];
-        const indexInQueue = pendingCustomer.findIndex(
-          (tx) => tx.transaction_id === latestUserPending.transaction_id
-        );
-        if (indexInQueue !== -1) {
-          const position = indexInQueue + 1;
-          queueText = `You are in line: #${position}`;
-        }
-      }
-    }
-
-    if (queueText && messageEl) {
-      messageEl.textContent = queueText;
-    }
-
-    
-    const { data: transactions, error: txError } = await supabase
-      .from("transactions")
-      .select("*")
-      .eq("user_id", user.user_id)
-      .order("date_time", { ascending: false });
-
-    if (txError) {
-      console.error("Error fetching transactions:", txError);
-      if (messageEl) {
-        messageEl.textContent = "Error loading transactions.";
-      }
-      return;
-    }
-
-    if (!transactions || transactions.length === 0) {
-      if (messageEl) {
-        messageEl.textContent = "No transactions found.";
-      }
-      return;
-    }
-
-    const txIds = transactions.map((t) => t.transaction_id);
-
-    
-    const { data: details, error: detailError } = await supabase
-      .from("transaction_detail")
-      .select("*")
-      .in("transaction_id", txIds);
-
-    if (detailError) {
-      console.error("Error fetching transaction details:", detailError);
-      if (messageEl) {
-        messageEl.textContent = "Error loading transaction details.";
-      }
-      return;
-    }
-
-    const detailByTxId = {};
-    (details || []).forEach((d) => {
-      detailByTxId[d.transaction_id] = d;
-    });
-
-    // Collect all service IDs used across all transactions
-    const allServiceIdsSet = new Set();
-    (details || []).forEach((d) => {
-      (d.services || []).forEach((s) => {
-        allServiceIdsSet.add(s.service_id);
-      });
-    });
-
-    let serviceTypeById = {};
-    if (allServiceIdsSet.size > 0) {
-      const allServiceIds = Array.from(allServiceIdsSet);
-
-      const { data: serviceTypes, error: svcError } = await supabase
-        .from("service_type")
-        .select("*")
-        .in("service_id", allServiceIds);
-
-      if (svcError) {
-        console.error("Error fetching service types:", svcError);
-      } else {
-        (serviceTypes || []).forEach((svc) => {
-          serviceTypeById[svc.service_id] = svc;
-        });
-      }
-    }
-
-    if (!listContainer) return;
-
-    const fragment = document.createDocumentFragment();
-
-    transactions.forEach((tx) => {
-      const detail = detailByTxId[tx.transaction_id];
-      const services = detail?.services || [];
-      const totalAmount = detail?.total_amount ?? 0;
-
-      const wrapper = document.createElement("div");
-
-      const header = document.createElement("p");
-      header.textContent = `Transaction ID: ${tx.transaction_id} | User ID: ${tx.user_id} | Processed By: ${
-        tx.processed_by || "N/A"
-      } | Status: ${tx.status || "N/A"} | Date: ${
-        tx.date_time ? new Date(tx.date_time).toLocaleString() : "N/A"
-      }`;
-      wrapper.appendChild(header);
-
-      const servicesTitle = document.createElement("p");
-      servicesTitle.textContent = "Services:";
-      wrapper.appendChild(servicesTitle);
-
-      if (services.length > 0) {
-        const ul = document.createElement("ul");
-        services.forEach((item) => {
-          const li = document.createElement("li");
-          const svc = serviceTypeById[item.service_id];
-          const name = svc ? svc.servicename : `Service ${item.service_id}`;
-          const price = svc ? svc.unitprice : "";
-          li.textContent = `${name} (Qty: ${item.quantity}, Total: ₱${Number(
-            item.total
-          ).toFixed(2)}${price !== "" ? `, Unit Price: ₱${price}` : ""})`;
-          ul.appendChild(li);
-        });
-        wrapper.appendChild(ul);
-      } else {
-        const noServices = document.createElement("p");
-        noServices.textContent = "No services recorded.";
-        wrapper.appendChild(noServices);
-      }
-
-      const totalP = document.createElement("p");
-      totalP.textContent = `Total: ₱${Number(totalAmount).toFixed(2)}`;
-      wrapper.appendChild(totalP);
-
-      fragment.appendChild(wrapper);
-    });
-
-    listContainer.innerHTML = "";
-    listContainer.appendChild(fragment);
-
-    if (makeAnotherBtn) {
-      makeAnotherBtn.addEventListener("click", () => {
-        window.location.href = "dashboard.html";
-      });
-    }
-  } catch (err) {
-    console.error("Unexpected error loading transaction status:", err);
-    if (messageEl) {
-      messageEl.textContent = "Unexpected error loading transaction status.";
-    }
   }
 }
 

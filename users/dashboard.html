@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mapua Library Billing System</title>
-    <link rel="stylesheet" href="dashboard.css" />
   </head>
   <body>
     <!-- <div id="userInfo">
@@ -22,16 +21,8 @@
     
     <hr>
     
-    <!-- <div id="servicesSection">
-        <h2>Avail Services</h2>
-        <form id="serviceForm">
-            <div id="servicesList"></div>
-            <br>
-            <button type="submit">Submit Transaction</button>
-        </form>
-    </div> -->
-
-    <div class="service-type">
+    <!-- User service section (hidden for admin/superadmin via app.js) -->
+    <div id="servicesSection" class="service-type">
       <h2>Service Type</h2>
 
       <form id="serviceForm">
@@ -53,41 +44,10 @@
       </form>
     </div>
     
-
-    
-    
-    <br>
+    <br />
     <button id="logoutBtn">Logout</button>
-    
     <p id="status"></p>
 
-      <div class="service-type">
-        <h2>Service Type</h2>
-
-        <form id="serviceForm">
-          <div class="service-holder">
-            <div id="servicesList"></div>
-          </div>
-
-          <br />
-
-          <div>
-            <label for="totalAmount">Total:</label>
-            <input id="totalAmount" type="text" value="0.00" readonly />
-          </div>
-
-          <div class="btn-holder">
-            <button type="submit">Submit Transaction</button>
-            <button type="reset">Reset</button>
-          </div>
-        </form>
-      </div>
-
-      <br />
-      <button id="logoutBtn">Logout</button>
-
-      <p id="status"></p>
-    </div>
     <script type="module" src="app.js"></script>
   </body>
 </html>
