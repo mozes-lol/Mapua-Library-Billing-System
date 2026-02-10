@@ -116,8 +116,8 @@ function initDashboardPage() {
     // Show database information for admin
     document.getElementById("databaseInfo").style.display = "block";
     document.getElementById("dbUrl").textContent = SUPABASE_CONFIG.url;
-    // Show users table for admin
-    document.getElementById("usersTableSection").style.display = "block";
+    // Dynamically create and show users table for admin only
+    createUsersTableHTML();
     loadUsersTable();
   }
   // And no, Shaun. Putting "Super Admin" in your role will not make you an admin.
@@ -199,6 +199,35 @@ async function loadServices() {
     console.error("Error loading services:", error);
     servicesList.innerHTML = "<p>Error loading services</p>";
   }
+}
+
+function createUsersTableHTML() {
+  const adminContent = document.getElementById("adminOnlyContent");
+  adminContent.innerHTML = `
+    <div id="usersTableSection" style="margin: 20px 0;">
+      <h3>Users Table</h3>
+      <div style="overflow-x: auto;">
+        <table id="usersTable" border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+          <thead style="background-color: #4CAF50; color: white;">
+            <tr>
+              <th>User ID</th>
+              <th>Given Name</th>
+              <th>Middle Name</th>
+              <th>Last Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Program</th>
+              <th>Year</th>
+              <th>Department</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="9" style="text-align: center;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
 }
 
 async function loadUsersTable() {
