@@ -21,26 +21,18 @@ if (currentPage === "index.html" || currentPage === "") {
 function initLoginPage() {
   const loginForm = document.getElementById("loginForm");
   const status = document.getElementById("status");
-  const loadingOverlay = document.getElementById("loadingOverlay");
-  const loadingText = loadingOverlay.querySelector(".loading-text");
-  const submitBtn = document.querySelector(".submit-btn");
 
   checkIfLoggedIn();
 
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    
-    // Show loading spinner
-    loadingText.textContent = "Logging in...";
-    loadingOverlay.style.display = "flex";
-    submitBtn.disabled = true;
-    status.textContent = "";
+    status.textContent = "Logging in...";
 
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
     try {
-      loadingText.textContent = "Authenticating...";
+      status.textContent = "Authenticating...";
 
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({
@@ -53,7 +45,7 @@ function initLoginPage() {
         throw new Error("Authentication failed: " + authError.message);
       }
 
-      loadingText.textContent = "Fetching user data...";
+      status.textContent = "Fetching user data...";
       console.log("Auth successful, fetching user data for:", email);
 
       const { data: userData, error: userError } = await supabase
@@ -85,18 +77,14 @@ function initLoginPage() {
       const user = userData[0];
       localStorage.setItem("currentUser", JSON.stringify(user));
 
-      loadingText.textContent = "Login successful! Redirecting...";
-      
+      status.textContent = "Login successful! Redirecting...";
+      status.style.color = "green";
+
       setTimeout(() => {
         window.location.href = "dashboard.html";
       }, 1000);
     } catch (error) {
       console.error("Login error:", error);
-      
-      // Hide loading spinner on error
-      loadingOverlay.style.display = "none";
-      submitBtn.disabled = false;
-      
       status.textContent = "Login failed: " + error.message;
       status.style.color = "red";
     }
@@ -137,14 +125,6 @@ function initDashboardPage() {
     await submitTransaction(user, status);
   });
 
-  const resetBtn = document.querySelector('button[type="reset"]');
-  if (resetBtn) {
-    resetBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      resetServices();
-    });
-  }
-
   logoutBtn.addEventListener("click", async () => {
     const { error } = await supabase.auth.signOut();
 
@@ -167,29 +147,6 @@ function setTextIfExists(elementId, value) {
   const element = document.getElementById(elementId);
   if (element) {
     element.textContent = value;
-  }
-}
-
-function resetServices() {
-  document.querySelectorAll('input[name="service"]').forEach((checkbox) => {
-    checkbox.checked = false;
-    const serviceId = checkbox.value;
-    const quantityInput = document.getElementById(`quantity_${serviceId}`);
-    if (quantityInput) {
-      quantityInput.disabled = true;
-      quantityInput.value = 0;
-    }
-  });
-
-  const serviceForm = document.getElementById("serviceForm");
-  if (serviceForm) {
-    serviceForm.reset();
-  }
-
-  
-  const status = document.getElementById("status");
-  if (status) {
-    status.textContent = "";
   }
 }
 
@@ -338,15 +295,8 @@ async function submitTransaction(user, statusElement) {
 
     document.getElementById("serviceForm").reset();
 
-    document.querySelectorAll('input[name="service"]').forEach((checkbox) => {
-      const serviceId = checkbox.value;
-      const qty = document.getElementById(`quantity_${serviceId}`);
-      qty.disabled = !checkbox.checked;
-      qty.value = checkbox.checked ? 1 : 0;
-    });
-
     document.querySelectorAll('input[type="number"]').forEach((input) => {
-      input.disabled = false;
+      input.disabled = true;
     });
   } catch (error) {
     console.error("Transaction error:", error);
@@ -354,8 +304,6 @@ async function submitTransaction(user, statusElement) {
     statusElement.style.color = "red";
   }
 }
-
-
 
 function getCurrentSchoolYear() {
   const now = new Date();
@@ -399,5 +347,3 @@ async function checkIfLoggedIn() {
     }
   }
 }
-
-
