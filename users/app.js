@@ -110,6 +110,12 @@ function initDashboardPage() {
   document.getElementById("userDepartment").textContent =
     user.department || "N/A";
 
+  // Check if user is admin and show message
+  if (user.role && user.role.toLowerCase() === "admin") {
+    document.getElementById("adminMessage").style.display = "block";
+  }
+  // And no, Shaun. Putting "Super Admin" in your role will not make you an admin.
+
   loadServices();
 
   serviceForm.addEventListener("submit", async (e) => {
