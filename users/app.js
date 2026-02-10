@@ -344,7 +344,10 @@ function createTransactionsTableHTML() {
           </table>
           <p style="margin-top: 15px; font-size: 18px; font-weight: bold; text-align: right;">Grand Total: ₱<span id="detailGrandTotal"></span></p>
         </div>
-        <button id="closeDetailsBtn" style="background-color: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px;">Close</button>
+        <div style="display: flex; gap: 10px; margin-top: 10px; justify-content: flex-end;">
+          <button id="finalizeInvoiceBtn" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Finalize & Send Invoice</button>
+          <button id="closeDetailsBtn" style="background-color: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Close</button>
+        </div>
       </div>
     </div>
   `;
@@ -352,6 +355,7 @@ function createTransactionsTableHTML() {
   adminContent.insertAdjacentHTML('beforeend', transactionsSection);
   
   document.getElementById("closeDetailsBtn").addEventListener("click", closeTransactionDetails);
+  document.getElementById("finalizeInvoiceBtn").addEventListener("click", handleFinalizeInvoice);
 }
 
 async function loadTransactionsTable() {
@@ -418,8 +422,9 @@ async function loadTransactionsTable() {
           const userName = user ? `${user.given_name} ${user.last_name}` : "N/A";
           const dateTime = new Date(transaction.date_time).toLocaleString();
           const totalAmount = detailsMap[transaction.transaction_id] || 0;
-          const statusColor = transaction.status === "Pending" ? "#ff9800" : 
-                             transaction.status === "Approved" ? "#4CAF50" : "#f44336";
+          const statusColor = transaction.status === "Pending" ? "#ff9800" :
+                             transaction.status === "Approved" ? "#4CAF50" :
+                             transaction.status === "Processed" ? "#4CAF50" : "#f44336";
           
           return `
             <tr>
@@ -507,6 +512,21 @@ window.viewTransactionDetails = async function(transactionId) {
     document.getElementById("detailProcessedBy").textContent = transaction.processed_by || "Not processed yet";
     document.getElementById("detailGrandTotal").textContent = details.total_amount.toFixed(2);
 
+    const finalizeButton = document.getElementById("finalizeInvoiceBtn");
+    finalizeButton.dataset.transactionId = String(transaction.transaction_id);
+    finalizeButton.dataset.currentStatus = transaction.status || "";
+    if (transaction.status !== "Pending") {
+      finalizeButton.disabled = true;
+      finalizeButton.textContent = "Invoice Finalized";
+      finalizeButton.style.opacity = "0.7";
+      finalizeButton.style.cursor = "not-allowed";
+    } else {
+      finalizeButton.disabled = false;
+      finalizeButton.textContent = "Finalize & Send Invoice";
+      finalizeButton.style.opacity = "1";
+      finalizeButton.style.cursor = "pointer";
+    }
+
     // Populate services table
     const servicesTableBody = document.getElementById("detailServicesTable");
     servicesTableBody.innerHTML = details.services
@@ -538,6 +558,74 @@ window.viewTransactionDetails = async function(transactionId) {
 
 function closeTransactionDetails() {
   document.getElementById("transactionDetailsModal").style.display = "none";
+}
+
+function getCurrentUserFromStorage() {
+  const userJson = localStorage.getItem("currentUser");
+  if (!userJson) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(userJson);
+  } catch (error) {
+    console.error("Failed to parse current user:", error);
+    return null;
+  }
+}
+
+async function handleFinalizeInvoice() {
+  const statusElement = document.getElementById("transactionCrudStatus");
+  const finalizeButton = document.getElementById("finalizeInvoiceBtn");
+  const transactionId = Number(finalizeButton.dataset.transactionId);
+  const currentStatus = finalizeButton.dataset.currentStatus;
+
+  if (!transactionId) {
+    statusElement.textContent = "Missing transaction ID for processing.";
+    statusElement.style.color = "red";
+    return;
+  }
+
+  if (currentStatus !== "Pending") {
+    statusElement.textContent = "Only pending transactions can be processed.";
+    statusElement.style.color = "red";
+    return;
+  }
+
+  finalizeButton.disabled = true;
+  finalizeButton.textContent = "Finalizing...";
+
+  try {
+    const currentUser = getCurrentUserFromStorage();
+    const processedBy = currentUser?.user_id || null;
+
+    const { error } = await supabase
+      .from("transactions")
+      .update({ status: "Approved", processed_by: processedBy })
+      .eq("transaction_id", transactionId);
+
+    if (error) throw error;
+
+    document.getElementById("detailStatus").textContent = "Approved";
+    document.getElementById("detailProcessedBy").textContent = processedBy || "N/A";
+    finalizeButton.dataset.currentStatus = "Approved";
+    finalizeButton.textContent = "Invoice Finalized";
+    finalizeButton.style.opacity = "0.7";
+    finalizeButton.style.cursor = "not-allowed";
+
+    statusElement.textContent = "Transaction processed successfully.";
+    statusElement.style.color = "green";
+
+    await loadTransactionsTable();
+  } catch (error) {
+    console.error("Error finalizing invoice:", error);
+    statusElement.textContent = "Failed to process transaction: " + error.message;
+    statusElement.style.color = "red";
+    finalizeButton.disabled = false;
+    finalizeButton.textContent = "Finalize & Send Invoice";
+    finalizeButton.style.opacity = "1";
+    finalizeButton.style.cursor = "pointer";
+  }
 }
 
 async function loadUsersTable() {
