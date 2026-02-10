@@ -288,11 +288,38 @@ function createUsersTableHTML() {
 function createTransactionsTableHTML() {
   const adminContent = document.getElementById("adminOnlyContent");
   const transactionsSection = `
-    <div id="transactionsTableSection" style="margin: 20px 0;">
-      <h3>Transactions Table</h3>
+    <!-- Queue Table (Pending) -->
+    <div id="queueTableSection" style="margin: 20px 0;">
+      <h3>Queue - Pending Transactions</h3>
       <div style="overflow-x: auto;">
-        <table id="transactionsTable" border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
-          <thead style="background-color: #2196F3; color: white;">
+        <table id="queueTable" border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+          <thead style="background-color: #ff9800; color: white;">
+            <tr>
+              <th>Transaction ID</th>
+              <th>Transaction Code</th>
+              <th>User ID</th>
+              <th>User Name</th>
+              <th>Date & Time</th>
+              <th>School Year</th>
+              <th>Term</th>
+              <th>Status</th>
+              <th>Total Amount</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="queueTableBody">
+            <tr><td colspan="10" style="text-align: center;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Approved Table -->
+    <div id="approvedTableSection" style="margin: 20px 0;">
+      <h3>Approved Transactions</h3>
+      <div style="overflow-x: auto;">
+        <table id="approvedTable" border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+          <thead style="background-color: #4CAF50; color: white;">
             <tr>
               <th>Transaction ID</th>
               <th>Transaction Code</th>
@@ -307,7 +334,7 @@ function createTransactionsTableHTML() {
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody id="transactionsTableBody">
+          <tbody id="approvedTableBody">
             <tr><td colspan="11" style="text-align: center;">Loading...</td></tr>
           </tbody>
         </table>
@@ -354,15 +381,20 @@ function createTransactionsTableHTML() {
   
   adminContent.insertAdjacentHTML('beforeend', transactionsSection);
   
-  document.getElementById("closeDetailsBtn").addEventListener("click", closeTransactionDetails);
-  document.getElementById("finalizeInvoiceBtn").addEventListener("click", handleFinalizeInvoice);
+  setTimeout(() => {
+    const closeBtn = document.getElementById("closeDetailsBtn");
+    const finalizeBtn = document.getElementById("finalizeInvoiceBtn");
+    if (closeBtn) closeBtn.addEventListener("click", closeTransactionDetails);
+    if (finalizeBtn) finalizeBtn.addEventListener("click", handleFinalizeInvoice);
+  }, 100);
 }
 
 async function loadTransactionsTable() {
-  const tableBody = document.getElementById("transactionsTableBody");
+  const queueTableBody = document.getElementById("queueTableBody");
+  const approvedTableBody = document.getElementById("approvedTableBody");
 
   try {
-    // Fetch transactions
+    // Fetch all transactions
     const { data: transactions, error: transactionsError } = await supabase
       .from("transactions")
       .select("*")
@@ -370,14 +402,15 @@ async function loadTransactionsTable() {
 
     if (transactionsError) {
       console.error("Error fetching transactions:", transactionsError);
-      tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: red;">Error loading transactions</td></tr>';
+      const errorMsg = '<tr><td colspan="10" style="text-align: center; color: red;">Error loading transactions</td></tr>';
+      queueTableBody.innerHTML = errorMsg;
+      approvedTableBody.innerHTML = errorMsg;
       return;
     }
 
-    if (!transactions || transactions.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center;">No transactions found</td></tr>';
-      return;
-    }
+    // Separate transactions by status
+    const pendingTransactions = transactions.filter(t => t.status === "Pending");
+    const approvedTransactions = transactions.filter(t => t.status === "Approved");
 
     const userIds = [...new Set(transactions.map((t) => t.user_id).filter(Boolean))];
     let usersById = {};
@@ -415,40 +448,56 @@ async function loadTransactionsTable() {
       });
     }
 
-    tableBody.innerHTML = transactions
-      .map(
-        (transaction) => {
-          const user = usersById[transaction.user_id];
-          const userName = user ? `${user.given_name} ${user.last_name}` : "N/A";
-          const dateTime = new Date(transaction.date_time).toLocaleString();
-          const totalAmount = detailsMap[transaction.transaction_id] || 0;
-          const statusColor = transaction.status === "Pending" ? "#ff9800" :
-                             transaction.status === "Approved" ? "#4CAF50" :
-                             transaction.status === "Processed" ? "#4CAF50" : "#f44336";
-          
-          return `
-            <tr>
-                <td>${transaction.transaction_id}</td>
-                <td>${transaction.transaction_code || "N/A"}</td>
-                <td>${transaction.user_id}</td>
-                <td>${userName}</td>
-                <td>${dateTime}</td>
-                <td>${transaction.school_year || "N/A"}</td>
-                <td>${transaction.term || "N/A"}</td>
-                <td style="color: ${statusColor}; font-weight: bold;">${transaction.status || "N/A"}</td>
-                <td>${transaction.processed_by || "N/A"}</td>
-                <td>₱${totalAmount.toFixed(2)}</td>
-                <td>
-                    <button onclick="viewTransactionDetails(${transaction.transaction_id})" style="background-color: #2196F3; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;">View/Process Details</button>
-                </td>
-            </tr>
-          `;
-        }
-      )
-      .join("");
+    // Function to render table rows
+    const renderTableRows = (transactionList, includeProcessedBy = false) => {
+      if (!transactionList || transactionList.length === 0) {
+        return `<tr><td colspan="${includeProcessedBy ? 11 : 10}" style="text-align: center;">No transactions</td></tr>`;
+      }
+
+      return transactionList
+        .map(
+          (transaction) => {
+            const user = usersById[transaction.user_id];
+            const userName = user ? `${user.given_name} ${user.last_name}` : "N/A";
+            const dateTime = new Date(transaction.date_time).toLocaleString();
+            const totalAmount = detailsMap[transaction.transaction_id] || 0;
+            const statusColor = transaction.status === "Pending" ? "#ff9800" :
+                               transaction.status === "Approved" ? "#4CAF50" : "#f44336";
+            
+            const processedByCell = includeProcessedBy ? `<td>${transaction.processed_by || "N/A"}</td>` : "";
+            const buttonLabel = includeProcessedBy ? "View Details" : "View/Process Details";
+            
+            return `
+              <tr>
+                  <td>${transaction.transaction_id}</td>
+                  <td>${transaction.transaction_code || "N/A"}</td>
+                  <td>${transaction.user_id}</td>
+                  <td>${userName}</td>
+                  <td>${dateTime}</td>
+                  <td>${transaction.school_year || "N/A"}</td>
+                  <td>${transaction.term || "N/A"}</td>
+                  <td style="color: ${statusColor}; font-weight: bold;">${transaction.status || "N/A"}</td>
+                  ${processedByCell}
+                  <td>₱${totalAmount.toFixed(2)}</td>
+                  <td>
+                      <button onclick="viewTransactionDetails(${transaction.transaction_id})" style="background-color: #2196F3; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;">${buttonLabel}</button>
+                  </td>
+              </tr>
+            `;
+          }
+        )
+        .join("");
+    };
+
+    // Render both tables
+    queueTableBody.innerHTML = renderTableRows(pendingTransactions, false);
+    approvedTableBody.innerHTML = renderTableRows(approvedTransactions, true);
+
   } catch (error) {
     console.error("Error loading transactions:", error);
-    tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: red;">Error loading transactions</td></tr>';
+    const errorMsg = '<tr><td colspan="10" style="text-align: center; color: red;">Error loading transactions</td></tr>';
+    document.getElementById("queueTableBody").innerHTML = errorMsg;
+    document.getElementById("approvedTableBody").innerHTML = errorMsg;
   }
 }
 
