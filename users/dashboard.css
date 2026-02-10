@@ -25,14 +25,13 @@ body {
   text-align: center;
 }
 
-h1 {
-  color: #fef6dc;
-  font-size: 3em;
-  width: 100%;
-  height: fit-content;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+.img-logo2 {
+  background-color: #fef6dc;
+  width: 20%;
+  margin-bottom: 5%;
+  margin-top: 5%;
+  border-radius: 50%;
+  height: 10%;
 }
 
 .service-type {
@@ -181,4 +180,16 @@ h2 {
   font-size: 1.2rem;
   font-weight: 700;
   margin-left: 25%;
+}
+
+#logoutBtn {
+  width: fit-content;
+  height: 5vh;
+  background-color: #fef6dc;
+  color: #730400;
+  border: #fef6dc solid 3px;
+  border-radius: 10%;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-top: 2%;
 }
