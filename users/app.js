@@ -349,6 +349,11 @@ function createTransactionsTableHTML() {
         <div id="transactionDetailsContent" style="margin: 20px 0;">
           <p><strong>Transaction ID:</strong> <span id="detailTransactionId"></span></p>
           <p><strong>Transaction Code:</strong> <span id="detailTransactionCode"></span></p>
+          <div style="margin: 10px 0;">
+            <label for="confirmTransactionCode" style="display: block; font-weight: bold; margin-bottom: 5px;">Enter Transaction Code to Finalize:</label>
+            <input id="confirmTransactionCode" type="text" autocomplete="off" style="width: 100%; padding: 8px;" />
+            <p id="transactionCodeStatus" style="margin: 6px 0 0; font-weight: bold;"></p>
+          </div>
           <p><strong>User:</strong> <span id="detailUserName"></span></p>
           <p><strong>Date & Time:</strong> <span id="detailDateTime"></span></p>
           <p><strong>School Year:</strong> <span id="detailSchoolYear"></span></p>
@@ -562,18 +567,55 @@ window.viewTransactionDetails = async function(transactionId) {
     document.getElementById("detailGrandTotal").textContent = details.total_amount.toFixed(2);
 
     const finalizeButton = document.getElementById("finalizeInvoiceBtn");
+    const codeInput = document.getElementById("confirmTransactionCode");
+    const codeStatus = document.getElementById("transactionCodeStatus");
+    const existingCode = String(transaction.transaction_code || "").trim();
     finalizeButton.dataset.transactionId = String(transaction.transaction_id);
     finalizeButton.dataset.currentStatus = transaction.status || "";
+
+    if (codeInput) {
+      codeInput.value = existingCode;
+      codeInput.disabled = transaction.status !== "Pending";
+    }
+
+    if (codeStatus) {
+      codeStatus.textContent = "";
+      codeStatus.style.color = "";
+    }
+
     if (transaction.status !== "Pending") {
       finalizeButton.disabled = true;
       finalizeButton.textContent = "Invoice Finalized";
       finalizeButton.style.opacity = "0.7";
       finalizeButton.style.cursor = "not-allowed";
     } else {
-      finalizeButton.disabled = false;
+      finalizeButton.disabled = true;
       finalizeButton.textContent = "Finalize & Send Invoice";
       finalizeButton.style.opacity = "1";
       finalizeButton.style.cursor = "pointer";
+    }
+
+    if (codeInput) {
+      codeInput.oninput = () => {
+        const entered = String(codeInput.value || "").trim();
+        const hasValue = entered.length > 0;
+
+        if (codeStatus) {
+          if (!hasValue) {
+            codeStatus.textContent = "Enter the transaction code to continue.";
+            codeStatus.style.color = "#f44336";
+          } else {
+            codeStatus.textContent = "Transaction code ready.";
+            codeStatus.style.color = "#4CAF50";
+          }
+        }
+
+        if (transaction.status === "Pending") {
+          finalizeButton.disabled = !hasValue;
+        }
+      };
+
+      codeInput.oninput();
     }
 
     // Populate services table
@@ -628,6 +670,8 @@ async function handleFinalizeInvoice() {
   const finalizeButton = document.getElementById("finalizeInvoiceBtn");
   const transactionId = Number(finalizeButton.dataset.transactionId);
   const currentStatus = finalizeButton.dataset.currentStatus;
+  const codeInput = document.getElementById("confirmTransactionCode");
+  const enteredCode = String(codeInput?.value || "").trim();
 
   if (!transactionId) {
     statusElement.textContent = "Missing transaction ID for processing.";
@@ -641,6 +685,12 @@ async function handleFinalizeInvoice() {
     return;
   }
 
+  if (!enteredCode) {
+    statusElement.textContent = "Please enter a transaction code to finalize.";
+    statusElement.style.color = "red";
+    return;
+  }
+
   finalizeButton.disabled = true;
   finalizeButton.textContent = "Finalizing...";
 
@@ -650,7 +700,11 @@ async function handleFinalizeInvoice() {
 
     const { error } = await supabase
       .from("transactions")
-      .update({ status: "Approved", processed_by: processedBy })
+      .update({
+        status: "Approved",
+        processed_by: processedBy,
+        transaction_code: enteredCode,
+      })
       .eq("transaction_id", transactionId);
 
     if (error) throw error;
