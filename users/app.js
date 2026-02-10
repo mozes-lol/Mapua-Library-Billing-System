@@ -114,6 +114,8 @@ function initDashboardPage() {
   if (user.role && user.role.toLowerCase() === "admin") {
     createUsersTableHTML();
     loadUsersTable();
+    createServiceTypesTableHTML();
+    loadServiceTypesTable();
     createTransactionsTableHTML();
     loadTransactionsTable();
   }
@@ -277,6 +279,67 @@ function createUsersTableHTML() {
   document.getElementById("addUserBtn").addEventListener("click", openAddUserForm);
   document.getElementById("cancelFormBtn").addEventListener("click", closeUserForm);
   document.getElementById("userForm").addEventListener("submit", handleUserFormSubmit);
+}
+
+function createServiceTypesTableHTML() {
+  const adminContent = document.getElementById("adminOnlyContent");
+  adminContent.insertAdjacentHTML(
+    "beforeend",
+    `
+    <div id="serviceTypesSection" style="margin: 20px 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;">Service Types</h3>
+        <button id="addServiceTypeBtn" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">+ Add Service Type</button>
+      </div>
+      <div style="overflow-x: auto;">
+        <table id="serviceTypesTable" border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+          <thead style="background-color: #4CAF50; color: white;">
+            <tr>
+              <th>Service ID</th>
+              <th>Service Name</th>
+              <th>Unit Price</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="serviceTypesTableBody">
+            <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="serviceTypeStatus" style="margin-top: 10px; font-weight: bold;"></p>
+    </div>
+
+    <div id="serviceTypeFormModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+      <div style="background-color: white; margin: 50px auto; padding: 30px; width: 500px; border-radius: 10px; max-height: 80vh; overflow-y: auto;">
+        <h2 id="serviceTypeFormTitle">Add Service Type</h2>
+        <form id="serviceTypeForm">
+          <input type="hidden" id="serviceTypeId">
+
+          <label style="display: block; margin-top: 10px; font-weight: bold;">Service Name:</label>
+          <input type="text" id="serviceTypeName" required style="width: 100%; padding: 8px; margin-top: 5px;">
+
+          <label style="display: block; margin-top: 10px; font-weight: bold;">Unit Price:</label>
+          <input type="number" id="serviceTypePrice" min="0" step="0.01" required style="width: 100%; padding: 8px; margin-top: 5px;">
+
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button type="submit" style="flex: 1; background-color: #4CAF50; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Save</button>
+            <button type="button" id="cancelServiceTypeBtn" style="flex: 1; background-color: #f44336; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    `
+  );
+
+  document
+    .getElementById("addServiceTypeBtn")
+    .addEventListener("click", openAddServiceTypeForm);
+  document
+    .getElementById("cancelServiceTypeBtn")
+    .addEventListener("click", closeServiceTypeForm);
+  document
+    .getElementById("serviceTypeForm")
+    .addEventListener("submit", handleServiceTypeFormSubmit);
 }
 
 function createTransactionsTableHTML() {
@@ -772,6 +835,50 @@ async function loadUsersTable() {
   }
 }
 
+async function loadServiceTypesTable() {
+  const tableBody = document.getElementById("serviceTypesTableBody");
+
+  try {
+    const { data: services, error } = await supabase
+      .from("service_type")
+      .select("*")
+      .order("service_id", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching service types:", error);
+      tableBody.innerHTML =
+        '<tr><td colspan="4" style="text-align: center; color: red;">Error loading service types</td></tr>';
+      return;
+    }
+
+    if (!services || services.length === 0) {
+      tableBody.innerHTML =
+        '<tr><td colspan="4" style="text-align: center;">No service types found</td></tr>';
+      return;
+    }
+
+    tableBody.innerHTML = services
+      .map(
+        (service) => `
+          <tr>
+            <td>${service.service_id || "N/A"}</td>
+            <td>${service.servicename || "N/A"}</td>
+            <td>₱${Number(service.unitprice || 0).toFixed(2)}</td>
+            <td>
+              <button onclick="editServiceType('${service.service_id}')" style="background-color: #2196F3; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; margin-right: 5px;">Edit</button>
+              <button onclick="deleteServiceType('${service.service_id}')" style="background-color: #f44336; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
+            </td>
+          </tr>
+        `
+      )
+      .join("");
+  } catch (error) {
+    console.error("Error loading service types:", error);
+    tableBody.innerHTML =
+      '<tr><td colspan="4" style="text-align: center; color: red;">Error loading service types</td></tr>';
+  }
+}
+
 function openAddUserForm() {
   document.getElementById("formTitle").textContent = "Add New User";
   document.getElementById("userForm").reset();
@@ -779,9 +886,22 @@ function openAddUserForm() {
   document.getElementById("userFormModal").style.display = "block";
 }
 
+function openAddServiceTypeForm() {
+  document.getElementById("serviceTypeFormTitle").textContent =
+    "Add Service Type";
+  document.getElementById("serviceTypeForm").reset();
+  document.getElementById("serviceTypeId").value = "";
+  document.getElementById("serviceTypeFormModal").style.display = "block";
+}
+
 function closeUserForm() {
   document.getElementById("userFormModal").style.display = "none";
   document.getElementById("userForm").reset();
+}
+
+function closeServiceTypeForm() {
+  document.getElementById("serviceTypeFormModal").style.display = "none";
+  document.getElementById("serviceTypeForm").reset();
 }
 
 async function handleUserFormSubmit(e) {
@@ -837,6 +957,52 @@ async function handleUserFormSubmit(e) {
   }
 }
 
+async function handleServiceTypeFormSubmit(e) {
+  e.preventDefault();
+  const statusElement = document.getElementById("serviceTypeStatus");
+
+  const serviceId = document.getElementById("serviceTypeId").value;
+  const serviceData = {
+    servicename: document.getElementById("serviceTypeName").value,
+    unitprice: Number(document.getElementById("serviceTypePrice").value),
+  };
+
+  try {
+    if (serviceId) {
+      const { error } = await supabase
+        .from("service_type")
+        .update(serviceData)
+        .eq("service_id", serviceId);
+
+      if (error) throw error;
+
+      statusElement.textContent = "Service type updated successfully!";
+      statusElement.style.color = "green";
+    } else {
+      const { error } = await supabase
+        .from("service_type")
+        .insert([serviceData]);
+
+      if (error) throw error;
+
+      statusElement.textContent = "Service type created successfully!";
+      statusElement.style.color = "green";
+    }
+
+    closeServiceTypeForm();
+    loadServiceTypesTable();
+    loadServices();
+
+    setTimeout(() => {
+      statusElement.textContent = "";
+    }, 3000);
+  } catch (error) {
+    console.error("Error saving service type:", error);
+    statusElement.textContent = "Error: " + error.message;
+    statusElement.style.color = "red";
+  }
+}
+
 window.editUser = async function(userId) {
   try {
     const { data: user, error } = await supabase
@@ -867,6 +1033,32 @@ window.editUser = async function(userId) {
   }
 }
 
+window.editServiceType = async function(serviceId) {
+  try {
+    const { data: service, error } = await supabase
+      .from("service_type")
+      .select("*")
+      .eq("service_id", serviceId)
+      .single();
+
+    if (error) throw error;
+
+    document.getElementById("serviceTypeFormTitle").textContent =
+      "Edit Service Type";
+    document.getElementById("serviceTypeId").value = service.service_id;
+    document.getElementById("serviceTypeName").value = service.servicename || "";
+    document.getElementById("serviceTypePrice").value =
+      service.unitprice ?? "";
+
+    document.getElementById("serviceTypeFormModal").style.display = "block";
+  } catch (error) {
+    console.error("Error fetching service type:", error);
+    const statusElement = document.getElementById("serviceTypeStatus");
+    statusElement.textContent = "Error loading service type: " + error.message;
+    statusElement.style.color = "red";
+  }
+}
+
 window.deleteUser = async function(userId) {
   if (!confirm("Are you sure you want to delete this user?")) {
     return;
@@ -893,6 +1085,37 @@ window.deleteUser = async function(userId) {
   } catch (error) {
     console.error("Error deleting user:", error);
     statusElement.textContent = "Error deleting user: " + error.message;
+    statusElement.style.color = "red";
+  }
+}
+
+window.deleteServiceType = async function(serviceId) {
+  if (!confirm("Are you sure you want to delete this service type?")) {
+    return;
+  }
+
+  const statusElement = document.getElementById("serviceTypeStatus");
+
+  try {
+    const { error } = await supabase
+      .from("service_type")
+      .delete()
+      .eq("service_id", serviceId);
+
+    if (error) throw error;
+
+    statusElement.textContent = "Service type deleted successfully!";
+    statusElement.style.color = "green";
+
+    loadServiceTypesTable();
+    loadServices();
+
+    setTimeout(() => {
+      statusElement.textContent = "";
+    }, 3000);
+  } catch (error) {
+    console.error("Error deleting service type:", error);
+    statusElement.textContent = "Error deleting service type: " + error.message;
     statusElement.style.color = "red";
   }
 }
