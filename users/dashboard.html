@@ -21,6 +21,37 @@
     <div id="adminMessage" style="display: none; background-color: #4CAF50; color: white; padding: 10px; margin: 10px 0; border-radius: 5px; font-weight: bold;">
         You are an admin
     </div>
+    <!-- Confirms if the page is connected to the database -->
+    <div id="databaseInfo" style="display: none; background-color: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; border: 2px solid #4CAF50;">
+        <h3 style="margin-top: 0; color: #333;">Database Information</h3>
+        <p><strong>Connected to:</strong> <span id="dbUrl" style="color: #0066cc;"></span></p>
+    </div>
+    <!-- Shows the user table within that database -->
+    <!-- It is worth noting that this is not secure, as you can literally see the contents
+         of the users table, including sensitive information. This should only be accessible to admins. -->
+    <div id="usersTableSection" style="display: none; margin: 20px 0;">
+        <h3>Users Table</h3>
+        <div style="overflow-x: auto;">
+            <table id="usersTable" border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+                <thead style="background-color: #4CAF50; color: white;">
+                    <tr>
+                        <th>User ID</th>
+                        <th>Given Name</th>
+                        <th>Middle Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Program</th>
+                        <th>Year</th>
+                        <th>Department</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr><td colspan="9" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
     
     <hr>
     

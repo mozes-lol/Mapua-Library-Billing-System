@@ -113,6 +113,12 @@ function initDashboardPage() {
   // Check if user is admin and show message
   if (user.role && user.role.toLowerCase() === "admin") {
     document.getElementById("adminMessage").style.display = "block";
+    // Show database information for admin
+    document.getElementById("databaseInfo").style.display = "block";
+    document.getElementById("dbUrl").textContent = SUPABASE_CONFIG.url;
+    // Show users table for admin
+    document.getElementById("usersTableSection").style.display = "block";
+    loadUsersTable();
   }
   // And no, Shaun. Putting "Super Admin" in your role will not make you an admin.
 
@@ -192,6 +198,49 @@ async function loadServices() {
   } catch (error) {
     console.error("Error loading services:", error);
     servicesList.innerHTML = "<p>Error loading services</p>";
+  }
+}
+
+async function loadUsersTable() {
+  const tableBody = document.getElementById("usersTableBody");
+
+  try {
+    const { data: users, error } = await supabase
+      .from("users")
+      .select("*")
+      .order("user_id", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching users:", error);
+      tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: red;">Error loading users</td></tr>';
+      return;
+    }
+
+    if (!users || users.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No users found</td></tr>';
+      return;
+    }
+
+    tableBody.innerHTML = users
+      .map(
+        (user) => `
+            <tr>
+                <td>${user.user_id || "N/A"}</td>
+                <td>${user.given_name || "N/A"}</td>
+                <td>${user.middle_name || "N/A"}</td>
+                <td>${user.last_name || "N/A"}</td>
+                <td>${user.email_address || "N/A"}</td>
+                <td>${user.role || "N/A"}</td>
+                <td>${user.program || "N/A"}</td>
+                <td>${user.year || "N/A"}</td>
+                <td>${user.department || "N/A"}</td>
+            </tr>
+        `
+      )
+      .join("");
+  } catch (error) {
+    console.error("Error loading users:", error);
+    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: red;">Error loading users</td></tr>';
   }
 }
 
