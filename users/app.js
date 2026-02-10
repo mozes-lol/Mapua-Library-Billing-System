@@ -120,7 +120,6 @@ function initDashboardPage() {
     createUsersTableHTML();
     loadUsersTable();
   }
-  // And no, Shaun. Putting "Super Admin" in your role will not make you an admin.
 
   loadServices();
 
@@ -205,7 +204,10 @@ function createUsersTableHTML() {
   const adminContent = document.getElementById("adminOnlyContent");
   adminContent.innerHTML = `
     <div id="usersTableSection" style="margin: 20px 0;">
-      <h3>Users Table</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;">Users Table</h3>
+        <button id="addUserBtn" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">+ Add New User</button>
+      </div>
       <div style="overflow-x: auto;">
         <table id="usersTable" border="1" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse;">
           <thead style="background-color: #4CAF50; color: white;">
@@ -219,15 +221,65 @@ function createUsersTableHTML() {
               <th>Program</th>
               <th>Year</th>
               <th>Department</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="usersTableBody">
-            <tr><td colspan="9" style="text-align: center;">Loading...</td></tr>
+            <tr><td colspan="10" style="text-align: center;">Loading...</td></tr>
           </tbody>
         </table>
       </div>
+      <p id="crudStatus" style="margin-top: 10px; font-weight: bold;"></p>
+    </div>
+    
+    <!-- User Form Modal -->
+    <div id="userFormModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+      <div style="background-color: white; margin: 50px auto; padding: 30px; width: 500px; border-radius: 10px; max-height: 80vh; overflow-y: auto;">
+        <h2 id="formTitle">Add New User</h2>
+        <form id="userForm">
+          <input type="hidden" id="formUserId">
+          
+          <label style="display: block; margin-top: 10px; font-weight: bold;">Given Name:</label>
+          <input type="text" id="formGivenName" required style="width: 100%; padding: 8px; margin-top: 5px;">
+          
+          <label style="display: block; margin-top: 10px; font-weight: bold;">Middle Name:</label>
+          <input type="text" id="formMiddleName" style="width: 100%; padding: 8px; margin-top: 5px;">
+          
+          <label style="display: block; margin-top: 10px; font-weight: bold;">Last Name:</label>
+          <input type="text" id="formLastName" required style="width: 100%; padding: 8px; margin-top: 5px;">
+          
+          <label style="display: block; margin-top: 10px; font-weight: bold;">Email:</label>
+          <input type="email" id="formEmail" required style="width: 100%; padding: 8px; margin-top: 5px;">
+          
+          <label style="display: block; margin-top: 10px; font-weight: bold;">Role:</label>
+          <select id="formRole" required style="width: 100%; padding: 8px; margin-top: 5px;">
+            <option value="">Select Role</option>
+            <option value="Student">Student</option>
+            <option value="Admin">Admin</option>
+          </select>
+          
+          <label style="display: block; margin-top: 10px; font-weight: bold;">Program:</label>
+          <input type="text" id="formProgram" style="width: 100%; padding: 8px; margin-top: 5px;">
+          
+          <label style="display: block; margin-top: 10px; font-weight: bold;">Year:</label>
+          <input type="text" id="formYear" style="width: 100%; padding: 8px; margin-top: 5px;">
+          
+          <label style="display: block; margin-top: 10px; font-weight: bold;">Department:</label>
+          <input type="text" id="formDepartment" style="width: 100%; padding: 8px; margin-top: 5px;">
+          
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button type="submit" style="flex: 1; background-color: #4CAF50; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Save</button>
+            <button type="button" id="cancelFormBtn" style="flex: 1; background-color: #f44336; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Cancel</button>
+          </div>
+        </form>
+      </div>
     </div>
   `;
+  
+  // Add event listeners
+  document.getElementById("addUserBtn").addEventListener("click", openAddUserForm);
+  document.getElementById("cancelFormBtn").addEventListener("click", closeUserForm);
+  document.getElementById("userForm").addEventListener("submit", handleUserFormSubmit);
 }
 
 async function loadUsersTable() {
@@ -241,12 +293,12 @@ async function loadUsersTable() {
 
     if (error) {
       console.error("Error fetching users:", error);
-      tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: red;">Error loading users</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: red;">Error loading users</td></tr>';
       return;
     }
 
     if (!users || users.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No users found</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center;">No users found</td></tr>';
       return;
     }
 
@@ -263,13 +315,142 @@ async function loadUsersTable() {
                 <td>${user.program || "N/A"}</td>
                 <td>${user.year || "N/A"}</td>
                 <td>${user.department || "N/A"}</td>
+                <td>
+                    <button onclick="editUser('${user.user_id}')" style="background-color: #2196F3; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; margin-right: 5px;">Edit</button>
+                    <button onclick="deleteUser('${user.user_id}')" style="background-color: #f44336; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
+                </td>
             </tr>
         `
       )
       .join("");
   } catch (error) {
     console.error("Error loading users:", error);
-    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: red;">Error loading users</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: red;">Error loading users</td></tr>';
+  }
+}
+
+function openAddUserForm() {
+  document.getElementById("formTitle").textContent = "Add New User";
+  document.getElementById("userForm").reset();
+  document.getElementById("formUserId").value = "";
+  document.getElementById("userFormModal").style.display = "block";
+}
+
+function closeUserForm() {
+  document.getElementById("userFormModal").style.display = "none";
+  document.getElementById("userForm").reset();
+}
+
+async function handleUserFormSubmit(e) {
+  e.preventDefault();
+  const statusElement = document.getElementById("crudStatus");
+  
+  const userId = document.getElementById("formUserId").value;
+  const userData = {
+    given_name: document.getElementById("formGivenName").value,
+    middle_name: document.getElementById("formMiddleName").value || null,
+    last_name: document.getElementById("formLastName").value,
+    email_address: document.getElementById("formEmail").value,
+    role: document.getElementById("formRole").value,
+    program: document.getElementById("formProgram").value || null,
+    year: document.getElementById("formYear").value || null,
+    department: document.getElementById("formDepartment").value || null,
+  };
+  
+  try {
+    if (userId) {
+      // Update existing user
+      const { error } = await supabase
+        .from("users")
+        .update(userData)
+        .eq("user_id", userId);
+      
+      if (error) throw error;
+      
+      statusElement.textContent = "User updated successfully!";
+      statusElement.style.color = "green";
+    } else {
+      // Create new user
+      const { error } = await supabase
+        .from("users")
+        .insert([userData]);
+      
+      if (error) throw error;
+      
+      statusElement.textContent = "User created successfully!";
+      statusElement.style.color = "green";
+    }
+    
+    closeUserForm();
+    loadUsersTable();
+    
+    setTimeout(() => {
+      statusElement.textContent = "";
+    }, 3000);
+  } catch (error) {
+    console.error("Error saving user:", error);
+    statusElement.textContent = "Error: " + error.message;
+    statusElement.style.color = "red";
+  }
+}
+
+window.editUser = async function(userId) {
+  try {
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+    
+    if (error) throw error;
+    
+    document.getElementById("formTitle").textContent = "Edit User";
+    document.getElementById("formUserId").value = user.user_id;
+    document.getElementById("formGivenName").value = user.given_name || "";
+    document.getElementById("formMiddleName").value = user.middle_name || "";
+    document.getElementById("formLastName").value = user.last_name || "";
+    document.getElementById("formEmail").value = user.email_address || "";
+    document.getElementById("formRole").value = user.role || "";
+    document.getElementById("formProgram").value = user.program || "";
+    document.getElementById("formYear").value = user.year || "";
+    document.getElementById("formDepartment").value = user.department || "";
+    
+    document.getElementById("userFormModal").style.display = "block";
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    const statusElement = document.getElementById("crudStatus");
+    statusElement.textContent = "Error loading user data: " + error.message;
+    statusElement.style.color = "red";
+  }
+}
+
+window.deleteUser = async function(userId) {
+  if (!confirm("Are you sure you want to delete this user?")) {
+    return;
+  }
+  
+  const statusElement = document.getElementById("crudStatus");
+  
+  try {
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .eq("user_id", userId);
+    
+    if (error) throw error;
+    
+    statusElement.textContent = "User deleted successfully!";
+    statusElement.style.color = "green";
+    
+    loadUsersTable();
+    
+    setTimeout(() => {
+      statusElement.textContent = "";
+    }, 3000);
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    statusElement.textContent = "Error deleting user: " + error.message;
+    statusElement.style.color = "red";
   }
 }
 
