@@ -110,22 +110,48 @@ function initDashboardPage() {
   document.getElementById("userDepartment").textContent =
     user.department || "N/A";
 
-  // Check if user is admin and show admin-only sections
-  if (user.role && user.role.toLowerCase() === "admin") {
+  const role = (user.role || "").toLowerCase();
+  const isSuperAdmin = role === "super admin" || role === "superadmin";
+  const isAdmin = role === "admin";
+  const isStudent = role === "student";
+  const isInstructor = role === "instructor";
+  const isRegularUser = isStudent || isInstructor;
+
+  const servicesSection = document.getElementById("servicesSection");
+  const adminContent = document.getElementById("adminOnlyContent");
+
+  if (isSuperAdmin) {
     createUsersTableHTML();
     loadUsersTable();
     createServiceTypesTableHTML();
     loadServiceTypesTable();
     createTransactionsTableHTML();
     loadTransactionsTable();
+
+    if (servicesSection) {
+      servicesSection.style.display = "none";
+    }
+  } else if (isAdmin) {
+    createServiceTypesTableHTML();
+    loadServiceTypesTable();
+    createTransactionsTableHTML();
+    loadTransactionsTable();
+
+    if (servicesSection) {
+      servicesSection.style.display = "none";
+    }
+  } else if (isRegularUser) {
+    if (adminContent) {
+      adminContent.innerHTML = "";
+    }
+
+    loadServices();
+
+    serviceForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await submitTransaction(user, status);
+    });
   }
-
-  loadServices();
-
-  serviceForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    await submitTransaction(user, status);
-  });
 
   logoutBtn.addEventListener("click", async () => {
     const { error } = await supabase.auth.signOut();
