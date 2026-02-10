@@ -1,5 +1,5 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { SUPABASE_CONFIG } from "../config.js";
+import { EMAILJS_CONFIG, SUPABASE_CONFIG } from "../config.js";
 
 // const link = document.createElement("link");
 // link.rel = "stylesheet";
@@ -20,6 +20,76 @@ if (
 }
 
 const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+
+
+let emailjsClientPromise;
+async function getEmailjsClient() {
+  if (emailjsClientPromise) return emailjsClientPromise;
+
+  emailjsClientPromise = (async () => {
+    const mod = await import(
+      "https://cdn.jsdelivr.net/npm/@emailjs/browser@4/+esm"
+    );
+    const emailjs = mod.default ?? mod;
+
+    // init() is safe to call once per page load
+    if (EMAILJS_CONFIG?.publicKey) {
+      emailjs.init(EMAILJS_CONFIG.publicKey);
+    }
+
+    return emailjs;
+  })();
+
+  return emailjsClientPromise;
+}
+
+function isEmailjsConfigured() {
+  return Boolean(
+    EMAILJS_CONFIG?.publicKey &&
+      EMAILJS_CONFIG?.serviceId &&
+      EMAILJS_CONFIG?.templateId
+  );
+}
+
+async function sendApprovalEmail({
+  toEmail,
+  toName,
+  transactionId,
+  transactionCode,
+  totalAmount,
+  orderItems,
+}) {
+  if (!isEmailjsConfigured()) {
+    throw new Error("EmailJS is not configured (missing keys/IDs).");
+  }
+
+  if (!toEmail) {
+    throw new Error("Missing user email address.");
+  }
+
+  const emailjs = await getEmailjsClient();
+
+  
+  return await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+    
+    customer_email: toEmail,
+    customer_name: toName || "User",
+    order_id: String(transactionId ?? ""),
+    order_total: String(totalAmount ?? ""),
+    order_items: String(orderItems ?? ""),
+
+   
+    email: toEmail,
+    name: toName || "User",
+
+   
+    to_email: toEmail,
+    to_name: toName || "User",
+    transaction_id: String(transactionId ?? ""),
+    transaction_code: String(transactionCode ?? ""),
+    total_amount: String(totalAmount ?? ""),
+  });
+}
 
 if (currentPage === "index.html" || currentPage === "") {
   initLoginPage();
@@ -253,6 +323,16 @@ function initDashboardPage() {
   
       window.location.href = "transactionDetails.html";
     });
+
+  
+    const viewStatusBtn = document.querySelector(
+      '#servicesSection button[type="button"]'
+    );
+    if (viewStatusBtn) {
+      viewStatusBtn.addEventListener("click", () => {
+        window.location.href = "transactionStatus.html";
+      });
+    }
   }
 
 
@@ -755,10 +835,11 @@ window.viewTransactionDetails = async function(transactionId) {
     });
 
     let userName = "N/A";
+    let userEmail = "";
     if (transaction.user_id) {
       const { data: user, error: userError } = await supabase
         .from("users")
-        .select("given_name, middle_name, last_name")
+        .select("given_name, middle_name, last_name, email_address")
         .eq("user_id", transaction.user_id)
         .single();
 
@@ -768,6 +849,7 @@ window.viewTransactionDetails = async function(transactionId) {
         userName = `${user.given_name} ${user.middle_name || ""} ${user.last_name}`
           .replace(/\s+/g, " ")
           .trim();
+        userEmail = user.email_address || "";
       }
     }
 
@@ -787,6 +869,8 @@ window.viewTransactionDetails = async function(transactionId) {
     const existingCode = String(transaction.transaction_code || "").trim();
     finalizeButton.dataset.transactionId = String(transaction.transaction_id);
     finalizeButton.dataset.currentStatus = transaction.status || "";
+    finalizeButton.dataset.userEmail = userEmail;
+    finalizeButton.dataset.userName = userName;
 
     if (codeInput) {
       codeInput.value = existingCode;
@@ -833,20 +917,36 @@ window.viewTransactionDetails = async function(transactionId) {
       codeInput.oninput();
     }
 
-    // Populate services table
+    // Build order items summary + populate services table
     const servicesTableBody = document.getElementById("detailServicesTable");
-    servicesTableBody.innerHTML = details.services
-      .map(service => {
+    const orderItemsText = (details.services || [])
+      .map((service) => {
         const serviceInfo = servicesMap[service.service_id];
-        const serviceName = serviceInfo ? serviceInfo.servicename : `Service ID: ${service.service_id}`;
-        const unitPrice = serviceInfo ? serviceInfo.unitprice : (service.total / service.quantity);
-        
+        const serviceName = serviceInfo
+          ? serviceInfo.servicename
+          : `Service ID: ${service.service_id}`;
+        return `${serviceName} x${service.quantity} (₱${Number(service.total || 0).toFixed(2)})`;
+      })
+      .join("\n");
+
+    finalizeButton.dataset.orderItems = orderItemsText;
+
+    servicesTableBody.innerHTML = (details.services || [])
+      .map((service) => {
+        const serviceInfo = servicesMap[service.service_id];
+        const serviceName = serviceInfo
+          ? serviceInfo.servicename
+          : `Service ID: ${service.service_id}`;
+        const unitPrice = serviceInfo
+          ? serviceInfo.unitprice
+          : service.total / service.quantity;
+
         return `
           <tr>
             <td>${serviceName}</td>
             <td>${service.quantity}</td>
-            <td>₱${unitPrice.toFixed(2)}</td>
-            <td>₱${service.total.toFixed(2)}</td>
+            <td>₱${Number(unitPrice || 0).toFixed(2)}</td>
+            <td>₱${Number(service.total || 0).toFixed(2)}</td>
           </tr>
         `;
       })
@@ -933,6 +1033,32 @@ async function handleFinalizeInvoice() {
 
     statusElement.textContent = "Transaction processed successfully.";
     statusElement.style.color = "green";
+
+    // Send email to user after approval
+    try {
+      const toEmail = finalizeButton.dataset.userEmail || "";
+      const toName = finalizeButton.dataset.userName || "";
+      const orderItems = finalizeButton.dataset.orderItems || "";
+      const totalAmount = document.getElementById("detailGrandTotal")?.textContent || "";
+
+      await sendApprovalEmail({
+        toEmail,
+        toName,
+        transactionId,
+        transactionCode: enteredCode,
+        totalAmount,
+        orderItems,
+      });
+
+      statusElement.textContent = "Transaction approved and email sent.";
+      statusElement.style.color = "green";
+    } catch (emailErr) {
+      console.error("Email send failed:", emailErr);
+      // Keep approval success; only warn about email
+      statusElement.textContent =
+        "Transaction approved, but email failed: " + (emailErr?.message || emailErr);
+      statusElement.style.color = "#ff9800";
+    }
 
     await loadTransactionsTable();
   } catch (error) {
