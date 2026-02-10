@@ -524,7 +524,7 @@ async function initTransactionDetailsPage() {
           const price = svc ? svc.unitprice : "";
           li.textContent = `${name} (Qty: ${item.quantity}, Total: ₱${Number(
             item.total
-          ).toFixed(2)}${price !== "" ? `, Unit: ₱${price}` : ""})`;
+          ).toFixed(2)}${price !== "" ? `, Unit Price: ₱${price}` : ""})`;
           list.appendChild(li);
         });
 
@@ -638,7 +638,35 @@ async function initTransactionStatusPage() {
   const makeAnotherBtn = document.getElementById("makeAnotherTransactionBtn");
 
   try {
-  
+
+    let queueText = "";
+    const { data: pendingCustomer, error: pendingError } = await supabase
+      .from("transactions")
+      .select("transaction_id,user_id,status,date_time")
+      .eq("status", "Pending")
+      .order("date_time", { ascending: true });
+
+    if (!pendingError && pendingCustomer && pendingCustomer.length > 0) {
+      const userPending = pendingCustomer.filter(
+        (tx) => tx.user_id === user.user_id
+      );
+      if (userPending.length > 0) {
+        const latestUserPending = userPending[userPending.length - 1];
+        const indexInQueue = pendingCustomer.findIndex(
+          (tx) => tx.transaction_id === latestUserPending.transaction_id
+        );
+        if (indexInQueue !== -1) {
+          const position = indexInQueue + 1;
+          queueText = `You are in line: #${position}`;
+        }
+      }
+    }
+
+    if (queueText && messageEl) {
+      messageEl.textContent = queueText;
+    }
+
+    
     const { data: transactions, error: txError } = await supabase
       .from("transactions")
       .select("*")
@@ -739,7 +767,7 @@ async function initTransactionStatusPage() {
           const price = svc ? svc.unitprice : "";
           li.textContent = `${name} (Qty: ${item.quantity}, Total: ₱${Number(
             item.total
-          ).toFixed(2)}${price !== "" ? `, Unit: ₱${price}` : ""})`;
+          ).toFixed(2)}${price !== "" ? `, Unit Price: ₱${price}` : ""})`;
           ul.appendChild(li);
         });
         wrapper.appendChild(ul);
