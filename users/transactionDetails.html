@@ -4,34 +4,36 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Transaction Details</title>
+    <link rel="stylesheet" href="details.css" />
   </head>
   <body>
-    <h1>Transaction Details</h1>
+    <div class="details-container">
+      <h1>Transaction Details</h1>
 
-    <div id="userInfoDetails">
-      <p>User ID: <span id="tdUserId"></span></p>
-      <p>Processed By: <span id="tdProcessedBy"></span></p>
-      <p>Last Name: <span id="tdLastName"></span></p>
-      <p>Given Name: <span id="tdGivenName"></span></p>
-      <p>Middle Name: <span id="tdMiddleName"></span></p>
-      <p>Program: <span id="tdProgram"></span></p>
-      <p>School Year: <span id="tdSchoolYear"></span></p>
-      <p>Term: <span id="tdTerm"></span></p>
-      <p>Year: <span id="tdYear"></span></p>
-      <p>Date &amp; Time: <span id="tdDateTime"></span></p>
-      <p>Status: <span id="tdStatusText"></span></p>
+      <div id="userInfoDetails">
+        <p>User ID: <span id="tdUserId"></span></p>
+        <p>Processed By: <span id="tdProcessedBy"></span></p>
+        <p>Last Name: <span id="tdLastName"></span></p>
+        <p>Given Name: <span id="tdGivenName"></span></p>
+        <p>Middle Name: <span id="tdMiddleName"></span></p>
+        <p>Program: <span id="tdProgram"></span></p>
+        <p>School Year: <span id="tdSchoolYear"></span></p>
+        <p>Term: <span id="tdTerm"></span></p>
+        <p>Year: <span id="tdYear"></span></p>
+        <p>Date &amp; Time: <span id="tdDateTime"></span></p>
+        <p>Status: <span id="tdStatusText"></span></p>
+      </div>
+
+      <h2>Services</h2>
+      <div id="tdServices"></div>
+
+      <h2>Total Amount</h2>
+      <p><span id="tdTotalAmount"></span></p>
+
+      <p id="tdStatus"></p>
+
+      <button id="confirmTransactionBtn">Submit</button>
     </div>
-
-    <h2>Services</h2>
-    <div id="tdServices"></div>
-
-    <h2>Total Amount</h2>
-    <p><span id="tdTotalAmount"></span></p>
-
-    <p id="tdStatus"></p>
-
-    <button id="confirmTransactionBtn">Submit</button>
-
     <script type="module" src="app.js"></script>
   </body>
 </html>
