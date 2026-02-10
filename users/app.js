@@ -239,12 +239,43 @@ async function loadServices() {
           quantityInput.disabled = true;
           quantityInput.value = 0;
         }
+
+        updateTotalAmount();
+        
+      });
+
+      quantityInput.addEventListener("input", () => {
+        if (!quantityInput.disabled){
+          updateTotalAmount();
+        }
       });
     });
+    
   } catch (error) {
     console.error("Error loading services:", error);
     servicesList.innerHTML = "<p>Error loading services</p>";
   }
+}
+
+function updateTotalAmount() {
+  const totalAmountInput = document.getElementById("totalAmount");
+  if (!totalAmountInput) return;
+
+  const checkboxes = document.querySelectorAll('input[name="service"]:checked');
+  let total = 0;
+
+  checkboxes.forEach((checkbox) => {
+    const serviceId = parseInt(checkbox.value, 10);
+    const price = parseFloat(checkbox.dataset.price);
+    const quantityInput = document.getElementById(`quantity_${serviceId}`);
+    const quantity = parseInt(quantityInput?.value || "0", 10);
+
+    if (quantity > 0) {
+      total += price * quantity;
+    }
+  });
+
+  totalAmountInput.value = total.toFixed(2);
 }
 
 async function submitTransaction(user, statusElement) {
