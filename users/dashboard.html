@@ -272,6 +272,7 @@
     .badge.waiting { background-color: var(--status-waiting); }
 
     .queue-row { cursor: pointer; }
+    .queue-row:hover { background-color: rgba(255, 204, 0, 0.12); }
 
     /* Action Buttons - ENHANCED */
     .action-buttons {
@@ -1369,6 +1370,10 @@
       <div class="services-layout">
         <div class="services-header">
           <div class="section-label">REPORTS SECTION</div>
+        </div>
+        <div class="services-container" id="approved-transactions-panel" style="margin-bottom: 20px;">
+          <h3 style="margin-bottom: 12px; color: var(--primary-maroon);">Approved Transactions</h3>
+          <div id="approvedTransactionsList" style="overflow-x: auto;"></div>
         </div>
         <div id="adminOnlyContent"></div>
         <div class="services-container" id="reports-placeholder" style="display: flex; justify-content: center; align-items: center; color: #888;">

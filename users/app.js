@@ -67,6 +67,9 @@ function switchDashboardView(view) {
   if (view === "queue") {
     loadPendingQueueForDashboard();
   }
+  if (view === "reports") {
+    loadApprovedTransactionsList();
+  }
 }
 
 
@@ -473,7 +476,23 @@ function initDashboardPage() {
     });
   }
 
+  const approvedList = document.getElementById("approvedTransactionsList");
+  if (approvedList) {
+    approvedList.addEventListener("click", (event) => {
+      const row = event.target.closest("tr[data-transaction-id]");
+      if (!row) return;
+
+      const transactionId = Number(row.dataset.transactionId || 0);
+      if (!transactionId) return;
+
+      if (typeof window.viewTransactionDetails === "function") {
+        window.viewTransactionDetails(transactionId);
+      }
+    });
+  }
+
   loadPendingQueueForDashboard();
+  loadApprovedTransactionsList();
 
 
   const resetBtn = document.querySelector('button[type="reset"]');
@@ -512,6 +531,119 @@ function initDashboardPage() {
       }, 1000);
     }
     });
+  }
+}
+
+async function loadApprovedTransactionsList() {
+  const listContainer = document.getElementById("approvedTransactionsList");
+  if (!listContainer) return;
+
+  try {
+    const { data: transactions, error: txError } = await supabase
+      .from("transactions")
+      .select("transaction_id,transaction_code,user_id,date_time,status,processed_by")
+      .eq("status", "Approved")
+      .order("date_time", { ascending: false });
+
+    if (txError) {
+      console.error("Error loading approved transactions:", txError);
+      listContainer.innerHTML =
+        '<p style="color: #b22222;">Error loading approved transactions.</p>';
+      return;
+    }
+
+    if (!transactions || transactions.length === 0) {
+      listContainer.innerHTML =
+        '<p style="color: #666;">No approved transactions found.</p>';
+      return;
+    }
+
+    const userIds = [
+      ...new Set(transactions.map((tx) => tx.user_id).filter(Boolean)),
+    ];
+    let usersById = {};
+
+    if (userIds.length > 0) {
+      const { data: users, error: usersError } = await supabase
+        .from("users")
+        .select("user_id,given_name,last_name")
+        .in("user_id", userIds);
+
+      if (usersError) {
+        console.error("Error loading approved users:", usersError);
+      } else {
+        usersById = (users || []).reduce((acc, user) => {
+          acc[user.user_id] = user;
+          return acc;
+        }, {});
+      }
+    }
+
+    const txIds = transactions.map((tx) => tx.transaction_id);
+    let totalsById = {};
+
+    if (txIds.length > 0) {
+      const { data: details, error: detailError } = await supabase
+        .from("transaction_detail")
+        .select("transaction_id,total_amount")
+        .in("transaction_id", txIds);
+
+      if (detailError) {
+        console.error("Error loading approved totals:", detailError);
+      } else {
+        (details || []).forEach((detail) => {
+          totalsById[detail.transaction_id] = detail.total_amount || 0;
+        });
+      }
+    }
+
+    const rows = transactions
+      .map((tx) => {
+        const user = usersById[tx.user_id];
+        const name = user
+          ? `${user.given_name} ${user.last_name}`.trim()
+          : "N/A";
+        const dateTime = tx.date_time
+          ? new Date(tx.date_time).toLocaleString()
+          : "N/A";
+        const total = totalsById[tx.transaction_id] || 0;
+
+        return `
+          <tr class="queue-row" data-transaction-id="${tx.transaction_id}">
+            <td>${tx.transaction_id}</td>
+            <td>${tx.transaction_code || "N/A"}</td>
+            <td>${tx.user_id || "N/A"}</td>
+            <td>${name}</td>
+            <td>${dateTime}</td>
+            <td>${tx.processed_by || "N/A"}</td>
+            <td>₱${Number(total).toFixed(2)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    listContainer.innerHTML = `
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead style="background: var(--primary-maroon); color: var(--accent-gold);">
+          <tr>
+            <th style="text-align: left; padding: 10px;">Transaction ID</th>
+            <th style="text-align: left; padding: 10px;">Code</th>
+            <th style="text-align: left; padding: 10px;">User ID</th>
+            <th style="text-align: left; padding: 10px;">Name</th>
+            <th style="text-align: left; padding: 10px;">Date</th>
+            <th style="text-align: left; padding: 10px;">Processed By</th>
+            <th style="text-align: left; padding: 10px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    console.error("Unexpected error loading approved transactions:", err);
+    listContainer.innerHTML =
+      '<p style="color: #b22222;">Unexpected error loading approved transactions.</p>';
   }
 }
 
