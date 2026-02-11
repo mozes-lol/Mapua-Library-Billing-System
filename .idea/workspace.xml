@@ -5,18 +5,26 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cc35eb1b-5f03-41ac-90f8-f705a970e24f" name="Changes" comment="Supabase is already connected to the system">
-      <change beforePath="$PROJECT_DIR$/target/classes/com/mapua/library/models/AuditLog.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/mapua/library/models/AuditLog.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/mapua/library/models/ServiceType.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/mapua/library/models/ServiceType.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/mapua/library/models/Transaction.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/mapua/library/models/Transaction.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/mapua/library/models/TransactionDetail.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/mapua/library/models/TransactionDetail.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/mapua/library/models/User.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/mapua/library/models/User.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="HTML File" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="backend-complete" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
@@ -28,7 +36,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mozes-lol/Mapua-Library-Billing-System.git&quot;,
-    &quot;accountId&quot;: &quot;aa019d9a-c385-4e75-a02c-73d865db5809&quot;
+    &quot;accountId&quot;: &quot;5e030ca8-4d42-4f0c-b6a9-08c63e052812&quot;
   }
 }</component>
   <component name="ProjectColorInfo">{
@@ -39,17 +47,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/ADMIN/Desktop/PROJECT/Mapua-Library-Billing-System&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "frontend-admin-dashboard",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/murad/IdeaProjects/Mapua-Library-Billing-System",
+    "settings.editor.selected.configurable": "preferences.lookFeel"
   }
-}</component>
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\murad\IdeaProjects\Mapua-Library-Billing-System\users" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration default="true" type="JetRunConfigurationType">
       <module name="Mapua-Library-Billing-System" />
@@ -81,6 +97,29 @@
     </task>
     <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="origin/backend-complete" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Supabase is already connected to the system" />

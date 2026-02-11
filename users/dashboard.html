@@ -4,49 +4,46 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mapua Library Billing System</title>
-    <link rel="stylesheet" href="dashboard.css" />
   </head>
   <body>
-    <!-- <div id="userInfo">
-        <p><strong>User ID:</strong> <span id="userId"></span></p>
-        <p><strong>Name:</strong> <span id="userName"></span></p>
-        <p><strong>Email:</strong> <span id="userEmail"></span></p>
-        <p><strong>Role:</strong> <span id="userRole"></span></p>
-        <p><strong>Program:</strong> <span id="userProgram"></span></p>
-        <p><strong>Year:</strong> <span id="userYear"></span></p>
-        <p><strong>Department:</strong> <span id="userDepartment"></span></p>
+    <!-- Admin-only sections are dynamically created via JavaScript -->
+    <div id="adminOnlyContent"></div>
+    
+    <hr>
+    
+    <!-- User service section (hidden for admin/superadmin via app.js) -->
+    <div id="servicesSection" class="service-type">
+      <h2>Service Type</h2>
+
+      <form id="serviceForm">
+        <div class="service-holder">
+          <div id="servicesList"></div>
+        </div>
+
+        <br />
+
+        <div>
+          <label for="totalAmount">Total:</label>
+          <input id="totalAmount" type="text" value="0.00" readonly />
+        </div>
+
+        <div class="btn-holder">
+          <button type="submit">Submit Transaction</button>
+          <button type="reset">Reset</button>
+          <button type="button">View Transaction Status</button>
+        </div>
+      </form>
+
+    
+  
     </div>
-     -->
-    <div class="dashboard-container">
-      <h1>Services</h1>
+    
+    <br />
+    <button id="logoutBtn">Logout</button>
+    <p id="status"></p>
 
-      <div class="service-type">
-        <h2>Service Type</h2>
-
-        <form id="serviceForm">
-          <div class="service-holder">
-            <div id="servicesList"></div>
-          </div>
-
-          <br />
-
-          <div>
-            <label for="totalAmount">Total:</label>
-            <input id="totalAmount" type="text" value="0.00" readonly />
-          </div>
-
-          <div class="btn-holder">
-            <button type="submit">Submit Transaction</button>
-            <button type="reset">Reset</button>
-          </div>
-        </form>
-      </div>
-
-      <br />
-      <button id="logoutBtn">Logout</button>
-
-      <p id="status"></p>
-    </div>
     <script type="module" src="app.js"></script>
+
+</script>
   </body>
 </html>
