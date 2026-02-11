@@ -233,7 +233,7 @@ function initLoginPage() {
 
   
       if (loadingText) loadingText.textContent = "Logging audit...";
-      await logAuditAction(user.user_id, "User logged in");
+      await logAuthEvent("User logged in");
 
       loadingText.textContent = "Login successful! Redirecting...";
 
@@ -573,14 +573,10 @@ function initDashboardPage() {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
     // Log the logout action before signing out
-    const userJson = localStorage.getItem("currentUser");
-    if (userJson) {
-      try {
-        const user = JSON.parse(userJson);
-        await logAuditAction(user.user_id, "User logged out");
-      } catch (err) {
-        console.error("Error logging logout:", err);
-      }
+    try {
+      await logAuthEvent("User logged out");
+    } catch (err) {
+      console.error("Error logging logout:", err);
     }
 
     const { error } = await supabase.auth.signOut();
@@ -2846,5 +2842,25 @@ async function logAuditAction(userId, action) {
     }
   } catch (err) {
     console.error("Unexpected error logging audit:", err);
+  }
+}
+
+async function logAuthEvent(action) {
+  const userJson = localStorage.getItem("currentUser");
+  if (userJson) {
+    const user = JSON.parse(userJson);
+    if (user?.user_id) {
+      await logAuditAction(user.user_id, action);
+      return;
+    }
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const sessionUserId = session?.user?.id;
+  if (sessionUserId) {
+    await logAuditAction(sessionUserId, action);
   }
 }
