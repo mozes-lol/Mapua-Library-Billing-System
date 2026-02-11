@@ -1083,6 +1083,42 @@
       box-shadow: 0 5px 12px rgba(0,0,0,0.3);
     }
 
+    .services-list-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .services-list-actions button {
+      border: none;
+      padding: 6px 12px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+    }
+
+    .services-list-actions .btn-edit {
+      background: #ffb347;
+      color: #4a0000;
+    }
+
+    .services-list-actions .btn-delete {
+      background: #dc3545;
+      color: #fff;
+    }
+
+    .services-list-actions .btn-save {
+      background: #2e8b57;
+      color: #fff;
+    }
+
+    .services-list-actions .btn-cancel {
+      background: #6c757d;
+      color: #fff;
+    }
+
     /* =========================================
        SERVICE MODALS - ADD/EDIT
     ========================================= */
@@ -1302,6 +1338,9 @@
         <a href="#"><i class="fas fa-chevron-right"></i> REPORTS</a>
       </li>
       <li onclick="switchTab('services')" id="nav-services">
+        <a href="#"><i class="fas fa-chevron-right"></i> BILLING</a>
+      </li>
+      <li onclick="switchTab('services-list')" id="nav-services-list">
         <a href="#"><i class="fas fa-chevron-right"></i> SERVICES</a>
       </li>
     </ul>
@@ -1423,6 +1462,33 @@
             <tbody id="services-tbody">
             <!-- Services will be rendered here dynamically -->
             </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="services-list-view" style="display: none; padding: 25px 30px;">
+      <div class="services-layout">
+        <div class="services-header">
+          <div class="section-label">SERVICE LIST</div>
+        </div>
+        <div class="services-container">
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+            <button id="services-list-add-btn" class="btn-add-service-top" type="button">
+              <i class="fas fa-plus"></i>
+              <span>ADD SERVICE</span>
+            </button>
+          </div>
+          <table class="services-table">
+            <thead>
+              <tr>
+                <th>SERVICE ID</th>
+                <th>SERVICE NAME</th>
+                <th>UNIT PRICE</th>
+                <th id="services-list-actions-header">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="services-list-body"></tbody>
           </table>
         </div>
       </div>

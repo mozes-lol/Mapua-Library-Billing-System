@@ -21,6 +21,8 @@ if (
 
 const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 
+let roleState = { isAdmin: false, isSuperAdmin: false };
+
 function hasInlineDashboardViews() {
   return Boolean(
     document.getElementById("transaction-details-view") ||
@@ -33,6 +35,7 @@ function switchDashboardView(view) {
     queue: "dashboard-view",
     reports: "reports-view",
     services: "services-view",
+    "services-list": "services-list-view",
     form: "form-view",
     "transaction-details": "transaction-details-view",
     "transaction-status": "transaction-status-view",
@@ -56,19 +59,26 @@ function switchDashboardView(view) {
   const navQueue = document.getElementById("nav-queue");
   const navReports = document.getElementById("nav-reports");
   const navServices = document.getElementById("nav-services");
-  [navQueue, navReports, navServices].forEach((nav) => {
+  const navServicesList = document.getElementById("nav-services-list");
+  [navQueue, navReports, navServices, navServicesList].forEach((nav) => {
     if (nav) nav.classList.remove("active");
   });
 
   if (view === "queue" && navQueue) navQueue.classList.add("active");
   if (view === "reports" && navReports) navReports.classList.add("active");
   if (view === "services" && navServices) navServices.classList.add("active");
+  if (view === "services-list" && navServicesList) {
+    navServicesList.classList.add("active");
+  }
 
   if (view === "queue") {
     loadPendingQueueForDashboard();
   }
   if (view === "reports") {
     loadApprovedTransactionsList();
+  }
+  if (view === "services-list") {
+    loadServicesListPanel();
   }
 }
 
@@ -290,6 +300,8 @@ function initDashboardPage() {
   const isInstructor = role === "instructor";
   const isRegularUser = isStudent || isInstructor;
 
+  roleState = { isAdmin, isSuperAdmin };
+
  
   const servicesSection =
     document.getElementById("servicesSection") ||
@@ -301,6 +313,10 @@ function initDashboardPage() {
     "servicesCatalogHeader"
   );
   const addServiceBtn = document.getElementById("addServiceBtn");
+  const servicesListAddBtn = document.getElementById("services-list-add-btn");
+  const servicesListActionsHeader = document.getElementById(
+    "services-list-actions-header"
+  );
   const adminContent = document.getElementById("adminOnlyContent");
   const reportsPlaceholder = document.getElementById("reports-placeholder");
 
@@ -333,6 +349,12 @@ function initDashboardPage() {
     if (addServiceBtn) {
       addServiceBtn.style.display = "none";
     }
+    if (servicesListAddBtn) {
+      servicesListAddBtn.style.display = "flex";
+    }
+    if (servicesListActionsHeader) {
+      servicesListActionsHeader.style.display = "table-cell";
+    }
     if (reportsPlaceholder) {
       reportsPlaceholder.style.display = "none";
     }
@@ -356,6 +378,12 @@ function initDashboardPage() {
     if (addServiceBtn) {
       addServiceBtn.style.display = "none";
     }
+    if (servicesListAddBtn) {
+      servicesListAddBtn.style.display = "flex";
+    }
+    if (servicesListActionsHeader) {
+      servicesListActionsHeader.style.display = "table-cell";
+    }
     if (reportsPlaceholder) {
       reportsPlaceholder.style.display = "none";
     }
@@ -371,6 +399,12 @@ function initDashboardPage() {
     }
     if (addServiceBtn) {
       addServiceBtn.style.display = "none";
+    }
+    if (servicesListAddBtn) {
+      servicesListAddBtn.style.display = "none";
+    }
+    if (servicesListActionsHeader) {
+      servicesListActionsHeader.style.display = "none";
     }
     if (reportsPlaceholder) {
       reportsPlaceholder.style.display = "flex";
@@ -491,8 +525,41 @@ function initDashboardPage() {
     });
   }
 
+  if (servicesListAddBtn) {
+    servicesListAddBtn.addEventListener("click", () => {
+      if (canManageServices()) {
+        insertNewServiceRow();
+      }
+    });
+  }
+
+  const servicesListBody = document.getElementById("services-list-body");
+  if (servicesListBody) {
+    servicesListBody.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const row = event.target.closest("tr");
+      if (!row) return;
+
+      if (button.classList.contains("btn-edit")) {
+        beginServiceRowEdit(row);
+      } else if (button.classList.contains("btn-delete")) {
+        const serviceId = Number(row.dataset.serviceId || 0);
+        if (serviceId) {
+          deleteServiceRow(serviceId);
+        }
+      } else if (button.classList.contains("btn-save")) {
+        saveServiceRow(row);
+      } else if (button.classList.contains("btn-cancel")) {
+        loadServicesListPanel();
+      }
+    });
+  }
+
   loadPendingQueueForDashboard();
   loadApprovedTransactionsList();
+  loadServicesListPanel();
 
 
   const resetBtn = document.querySelector('button[type="reset"]');
@@ -531,6 +598,179 @@ function initDashboardPage() {
       }, 1000);
     }
     });
+  }
+}
+
+function canManageServices() {
+  return roleState.isAdmin || roleState.isSuperAdmin;
+}
+
+async function loadServicesListPanel() {
+  const listBody = document.getElementById("services-list-body");
+  if (!listBody) return;
+  const actionsHeader = document.getElementById("services-list-actions-header");
+  if (actionsHeader) {
+    actionsHeader.style.display = canManageServices() ? "table-cell" : "none";
+  }
+
+  try {
+    const { data: services, error } = await supabase
+      .from("service_type")
+      .select("service_id,servicename,unitprice")
+      .order("service_id", { ascending: true });
+
+    if (error) {
+      console.error("Error loading services list:", error);
+      listBody.innerHTML =
+        '<tr><td colspan="3" style="text-align: center; color: red;">Error loading services</td></tr>';
+      return;
+    }
+
+    if (!services || services.length === 0) {
+      listBody.innerHTML =
+        '<tr><td colspan="3" style="text-align: center;">No services found</td></tr>';
+      return;
+    }
+
+    const showActions = canManageServices();
+    listBody.innerHTML = services
+      .map(
+        (service) => `
+          <tr data-service-id="${service.service_id}" data-service-name="${
+            service.servicename || ""
+          }" data-service-price="${service.unitprice || 0}">
+            <td>${service.service_id || "N/A"}</td>
+            <td>${service.servicename || "N/A"}</td>
+            <td>₱${Number(service.unitprice || 0).toFixed(2)}</td>
+            ${
+              showActions
+                ? `<td>
+                    <div class="services-list-actions">
+                      <button class="btn-edit" type="button">Edit</button>
+                      <button class="btn-delete" type="button">Delete</button>
+                    </div>
+                  </td>`
+                : ""
+            }
+          </tr>
+        `
+      )
+      .join("");
+  } catch (err) {
+    console.error("Unexpected services list error:", err);
+    listBody.innerHTML =
+      '<tr><td colspan="3" style="text-align: center; color: red;">Error loading services</td></tr>';
+  }
+}
+
+function insertNewServiceRow() {
+  const listBody = document.getElementById("services-list-body");
+  if (!listBody || !canManageServices()) return;
+
+  if (listBody.querySelector("tr.is-editing")) return;
+
+  const row = document.createElement("tr");
+  row.classList.add("is-editing");
+  row.innerHTML = `
+    <td>NEW</td>
+    <td><input type="text" class="modal-input" value="" placeholder="Service name"></td>
+    <td><input type="number" class="modal-input" min="0" step="0.01" value="0"></td>
+    <td>
+      <div class="services-list-actions">
+        <button class="btn-save" type="button">Save</button>
+        <button class="btn-cancel" type="button">Cancel</button>
+      </div>
+    </td>
+  `;
+
+  listBody.prepend(row);
+}
+
+function beginServiceRowEdit(row) {
+  if (!row || !canManageServices()) return;
+  const listBody = document.getElementById("services-list-body");
+  if (listBody && listBody.querySelector("tr.is-editing")) return;
+
+  const name = row.dataset.serviceName || "";
+  const price = row.dataset.servicePrice || "0";
+  row.classList.add("is-editing");
+  row.innerHTML = `
+    <td>${row.dataset.serviceId || "N/A"}</td>
+    <td><input type="text" class="modal-input" value="${name}"></td>
+    <td><input type="number" class="modal-input" min="0" step="0.01" value="${price}"></td>
+    <td>
+      <div class="services-list-actions">
+        <button class="btn-save" type="button">Save</button>
+        <button class="btn-cancel" type="button">Cancel</button>
+      </div>
+    </td>
+  `;
+}
+
+async function saveServiceRow(row) {
+  if (!row || !canManageServices()) return;
+
+  const inputs = row.querySelectorAll("input");
+  if (inputs.length < 2) return;
+
+  const name = String(inputs[0].value || "").trim();
+  const price = Number(inputs[1].value || 0);
+
+  if (!name) {
+    window.alert("Please enter a service name.");
+    return;
+  }
+
+  if (Number.isNaN(price) || price < 0) {
+    window.alert("Please enter a valid unit price.");
+    return;
+  }
+
+  try {
+    const serviceId = Number(row.dataset.serviceId || 0);
+    if (serviceId) {
+      const { error } = await supabase
+        .from("service_type")
+        .update({ servicename: name, unitprice: price })
+        .eq("service_id", serviceId);
+
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("service_type")
+        .insert([{ servicename: name, unitprice: price }]);
+
+      if (error) throw error;
+    }
+
+    await loadServicesListPanel();
+    await loadServices();
+  } catch (err) {
+    console.error("Error saving service:", err);
+    window.alert("Failed to save service: " + (err?.message || err));
+  }
+}
+
+async function deleteServiceRow(serviceId) {
+  if (!canManageServices()) return;
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this service?"
+  );
+  if (!confirmDelete) return;
+
+  try {
+    const { error } = await supabase
+      .from("service_type")
+      .delete()
+      .eq("service_id", serviceId);
+
+    if (error) throw error;
+
+    await loadServicesListPanel();
+    await loadServices();
+  } catch (err) {
+    console.error("Error deleting service:", err);
+    window.alert("Failed to delete service: " + (err?.message || err));
   }
 }
 
@@ -732,6 +972,7 @@ function setTextIfExists(elementId, value) {
 
 async function loadServices() {
   const servicesList = document.getElementById("servicesList");
+  if (!servicesList) return;
 
   try {
     const { data: services, error } = await supabase
