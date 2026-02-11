@@ -137,3 +137,69 @@ h1 {
   color: #fef6dc;
   width: 7vw;
 }
+
+.total-container {
+  width: fit-content;
+  padding-left: 3%;
+  padding-right: 3%;
+  height: 5vh;
+  background-color: #730400;
+  border-radius: 5%;
+  border-color: #fef6dc;
+  border-style: solid;
+  -webkit-filter: drop-shadow(0 4px 100px rgba(0, 0, 0, 0.8));
+  -webkit-backdrop-filter: blur(50px);
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-top: 3%;
+  display: inline-flex;
+  margin-bottom: 3%;
+}
+
+#tdTotalAmount {
+  width: fit-content;
+  height: 60%;
+  color: #730400;
+  border: none;
+  background-color: #fef6dc;
+  border-radius: 5%;
+  font-size: 1.2rem;
+  font-weight: 700;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-top: 4%;
+  padding: 2%;
+  margin-left: 15%;
+}
+
+#total-text {
+  color: #fef6dc;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.services-group {
+  width: fit-content;
+  height: fit-content;
+  display: inline-block;
+  block-size: auto;
+  background-color: #fef6dc;
+  color: #730400;
+  border-radius: 5%;
+}
+
+#confirmTransactionBtn {
+  width: fit-content;
+  height: 5vh;
+  background-color: #fef6dc;
+  color: #730400;
+  border-radius: 5%;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  margin-top: 3%;
+}

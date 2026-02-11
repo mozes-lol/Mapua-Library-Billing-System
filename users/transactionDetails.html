@@ -26,27 +26,36 @@
           <div class="transaction-left">
             <p class="left-info">Last Name: <span id="tdLastName"></span></p>
             <p class="left-info">Given Name: <span id="tdGivenName"></span></p>
-            <p class="left-info">Middle Name: <span id="tdMiddleName"></span></p>
+            <p class="left-info">
+              Middle Name: <span id="tdMiddleName"></span>
+            </p>
             <p class="left-info">Program: <span id="tdProgram"></span></p>
-            <p class="left-info">School Year: <span id="tdSchoolYear"></span></p>
+            <p class="left-info">
+              School Year: <span id="tdSchoolYear"></span>
+            </p>
           </div>
           <div class="transaction-right">
             <p class="right-info">Term: <span id="tdTerm"></span></p>
             <p class="right-info">Year: <span id="tdYear"></span></p>
-            <p class="right-info">Date &amp; Time: <span id="tdDateTime"></span></p>
+            <p class="right-info">
+              Date &amp; Time: <span id="tdDateTime"></span>
+            </p>
             <p class="right-info">Status: <span id="tdStatusText"></span></p>
           </div>
         </div>
       </div>
 
-      <h2>Services</h2>
-      <div id="tdServices"></div>
-
-      <h2>Total Amount</h2>
-      <p><span id="tdTotalAmount"></span></p>
-
-      <p id="tdStatus"></p>
-
+      <div class="transaction-info">
+        <h2>Services</h2>
+        <div class="services-group">
+          <div id="tdServices"></div>
+        </div>
+        <div class="total-container">
+          <p id="total-text">Total Amount:</p>
+          <p><span id="tdTotalAmount"></span></p>
+          <p id="tdStatus"></p>
+        </div>
+      </div>
       <button id="confirmTransactionBtn">Submit</button>
     </div>
     <script type="module" src="app.js"></script>
