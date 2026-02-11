@@ -11,17 +11,32 @@
       <h1>Transaction Details</h1>
 
       <div id="userInfoDetails">
-        <p>User ID: <span id="tdUserId"></span></p>
-        <p>Processed By: <span id="tdProcessedBy"></span></p>
-        <p>Last Name: <span id="tdLastName"></span></p>
-        <p>Given Name: <span id="tdGivenName"></span></p>
-        <p>Middle Name: <span id="tdMiddleName"></span></p>
-        <p>Program: <span id="tdProgram"></span></p>
-        <p>School Year: <span id="tdSchoolYear"></span></p>
-        <p>Term: <span id="tdTerm"></span></p>
-        <p>Year: <span id="tdYear"></span></p>
-        <p>Date &amp; Time: <span id="tdDateTime"></span></p>
-        <p>Status: <span id="tdStatusText"></span></p>
+        <div class="user-process">
+          <div class="user-info">
+            User ID:
+            <span id="tdUserId"></span>
+          </div>
+          <div class="processed-info">
+            Processed By:
+            <span id="tdProcessedBy"></span>
+          </div>
+        </div>
+
+        <div class="transaction-info">
+          <div class="transaction-left">
+            <p class="left-info">Last Name: <span id="tdLastName"></span></p>
+            <p class="left-info">Given Name: <span id="tdGivenName"></span></p>
+            <p class="left-info">Middle Name: <span id="tdMiddleName"></span></p>
+            <p class="left-info">Program: <span id="tdProgram"></span></p>
+            <p class="left-info">School Year: <span id="tdSchoolYear"></span></p>
+          </div>
+          <div class="transaction-right">
+            <p class="right-info">Term: <span id="tdTerm"></span></p>
+            <p class="right-info">Year: <span id="tdYear"></span></p>
+            <p class="right-info">Date &amp; Time: <span id="tdDateTime"></span></p>
+            <p class="right-info">Status: <span id="tdStatusText"></span></p>
+          </div>
+        </div>
       </div>
 
       <h2>Services</h2>
