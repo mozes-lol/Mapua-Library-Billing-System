@@ -1746,6 +1746,20 @@ async function initTransactionStatusPage() {
   const listContainer = document.getElementById("txStatusList");
   const messageEl = document.getElementById("txStatusMessage");
   const makeAnotherBtn = document.getElementById("makeAnotherTransactionBtn");
+  const goBackBtn = document.getElementById("goBackToDashboardBtn");
+
+ 
+  if (goBackBtn) {
+    goBackBtn.addEventListener("click", () => {
+      window.location.href = "dashboard.html";
+    });
+  }
+
+  if (makeAnotherBtn) {
+    makeAnotherBtn.addEventListener("click", () => {
+      window.location.href = "dashboard.html";
+    });
+  }
 
   try {
 
@@ -1896,12 +1910,6 @@ async function initTransactionStatusPage() {
 
     listContainer.innerHTML = "";
     listContainer.appendChild(fragment);
-
-    if (makeAnotherBtn) {
-      makeAnotherBtn.addEventListener("click", () => {
-        window.location.href = "dashboard.html";
-      });
-    }
   } catch (err) {
     console.error("Unexpected error loading transaction status:", err);
     if (messageEl) {
