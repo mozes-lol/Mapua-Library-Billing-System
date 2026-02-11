@@ -329,6 +329,10 @@ function initDashboardPage() {
     "services-list-actions-header"
   );
   const navAccounts = document.getElementById("nav-accounts");
+  const navQueue = document.getElementById("nav-queue");
+  const navReports = document.getElementById("nav-reports");
+  const navServices = document.getElementById("nav-services");
+  const navServicesList = document.getElementById("nav-services-list");
   const adminContent = document.getElementById("adminOnlyContent");
   const reportsPlaceholder = document.getElementById("reports-placeholder");
 
@@ -336,18 +340,17 @@ function initDashboardPage() {
     window.switchTab = (tabName) => switchDashboardView(tabName);
     window.showForm = () => switchDashboardView("services");
     window.startEncoding = () => switchDashboardView("services");
-    switchDashboardView("queue");
+    if (isRegularUser) {
+      switchDashboardView("services");
+    } else {
+      switchDashboardView("queue");
+    }
   }
 
   if (isSuperAdmin) {
-    createUsersTableHTML();
-    loadUsersTable();
-    createServiceTypesTableHTML();
-    loadServiceTypesTable();
-    createTransactionsTableHTML();
-    loadTransactionsTable();
-    createAdminReportsHTML();
-    loadAdminReports();
+    if (adminContent) {
+      adminContent.innerHTML = "";
+    }
 
     if (servicesSection) {
       servicesSection.remove();
@@ -373,13 +376,14 @@ function initDashboardPage() {
     if (navAccounts) {
       navAccounts.style.display = "block";
     }
+    if (navQueue) navQueue.style.display = "block";
+    if (navReports) navReports.style.display = "block";
+    if (navServicesList) navServicesList.style.display = "block";
+    if (navServices) navServices.style.display = "none";
   } else if (isAdmin) {
-    createServiceTypesTableHTML();
-    loadServiceTypesTable();
-    createTransactionsTableHTML();
-    loadTransactionsTable();
-    createAdminReportsHTML();
-    loadAdminReports();
+    if (adminContent) {
+      adminContent.innerHTML = "";
+    }
 
     if (servicesSection) {
       servicesSection.remove();
@@ -403,8 +407,12 @@ function initDashboardPage() {
       reportsPlaceholder.style.display = "none";
     }
     if (navAccounts) {
-      navAccounts.style.display = "block";
+      navAccounts.style.display = "none";
     }
+    if (navQueue) navQueue.style.display = "block";
+    if (navReports) navReports.style.display = "block";
+    if (navServicesList) navServicesList.style.display = "block";
+    if (navServices) navServices.style.display = "none";
   } else if (isRegularUser) {
     if (adminContent) {
       adminContent.innerHTML = "";
@@ -430,6 +438,10 @@ function initDashboardPage() {
     if (navAccounts) {
       navAccounts.style.display = "none";
     }
+    if (navQueue) navQueue.style.display = "none";
+    if (navReports) navReports.style.display = "none";
+    if (navServicesList) navServicesList.style.display = "none";
+    if (navServices) navServices.style.display = "block";
 
     loadServices();
 
