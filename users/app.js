@@ -247,6 +247,8 @@ function initDashboardPage() {
     loadServiceTypesTable();
     createTransactionsTableHTML();
     loadTransactionsTable();
+    createAdminReportsHTML();
+    loadAdminReports();
 
     if (servicesSection) {
       servicesSection.remove();
@@ -256,6 +258,8 @@ function initDashboardPage() {
     loadServiceTypesTable();
     createTransactionsTableHTML();
     loadTransactionsTable();
+    createAdminReportsHTML();
+    loadAdminReports();
 
     if (servicesSection) {
       servicesSection.remove();
@@ -703,6 +707,28 @@ function createTransactionsTableHTML() {
   }, 100);
 }
 
+function createAdminReportsHTML() {
+  const adminContent = document.getElementById("adminOnlyContent");
+  if (!adminContent) return;
+
+  const reportsSection = `
+    <div id="adminReportsSection" style="margin: 20px 0;">
+      <h3>Transaction Summary (Approved)</h3>
+      <div id="adminReportsSummary">
+        <p>Total Approved Amount (this month): <span id="reportTotalAmount">₱0.00</span></p>
+        <p>Total Approved Transactions (this month): <span id="reportTotalCount">0</span></p>
+        <p>Average Amount per Transaction: <span id="reportAvgAmount">₱0.00</span></p>
+      </div>
+      <div style="max-width: 600px;">
+        <canvas id="reportDailyChart"></canvas>
+      </div>
+      <button id="exportTxReportCsvBtn">Export Monthly Report (CSV)</button>
+    </div>
+  `;
+
+  adminContent.insertAdjacentHTML("beforeend", reportsSection);
+}
+
 async function loadTransactionsTable() {
   const queueTableBody = document.getElementById("queueTableBody");
   const approvedTableBody = document.getElementById("approvedTableBody");
@@ -1083,6 +1109,144 @@ async function handleFinalizeInvoice() {
     finalizeButton.textContent = "Finalize & Send Invoice";
     finalizeButton.style.opacity = "1";
     finalizeButton.style.cursor = "pointer";
+  }
+}
+
+async function loadAdminReports() {
+  const summaryTotalEl = document.getElementById("reportTotalAmount");
+  const summaryCountEl = document.getElementById("reportTotalCount");
+  const summaryAvgEl = document.getElementById("reportAvgAmount");
+  const chartCanvas = document.getElementById("reportDailyChart");
+
+  if (!summaryTotalEl || !summaryCountEl || !summaryAvgEl || !chartCanvas) {
+    return;
+  }
+
+  try {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-based
+
+    const firstDay = new Date(Date.UTC(year, month, 1)).toISOString();
+    const lastDay = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59)).toISOString();
+
+    // Fetch approved transactions for this month
+    const { data: transactions, error: txError } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("status", "Approved")
+      .gte("date_time", firstDay)
+      .lte("date_time", lastDay);
+
+    if (txError) {
+      console.error("Error loading report transactions:", txError);
+      return;
+    }
+
+    if (!transactions || transactions.length === 0) {
+      summaryTotalEl.textContent = "₱0.00";
+      summaryCountEl.textContent = "0";
+      summaryAvgEl.textContent = "₱0.00";
+      return;
+    }
+
+    const txIds = transactions.map((t) => t.transaction_id);
+
+    const { data: details, error: detailError } = await supabase
+      .from("transaction_detail")
+      .select("transaction_id,total_amount")
+      .in("transaction_id", txIds);
+
+    if (detailError) {
+      console.error("Error loading report details:", detailError);
+      return;
+    }
+
+    const amountByTxId = {};
+    (details || []).forEach((d) => {
+      amountByTxId[d.transaction_id] = d.total_amount || 0;
+    });
+
+    const amounts = transactions.map(
+      (tx) => amountByTxId[tx.transaction_id] || 0
+    );
+
+    const totalAmount = amounts.reduce((sum, v) => sum + v, 0);
+    const count = amounts.length;
+    const avg = count > 0 ? totalAmount / count : 0;
+
+    summaryTotalEl.textContent = `₱${totalAmount.toFixed(2)}`;
+    summaryCountEl.textContent = String(count);
+    summaryAvgEl.textContent = `₱${avg.toFixed(2)}`;
+
+    // Daily totals
+    const dailyMap = {};
+    transactions.forEach((tx) => {
+      const dateKey = tx.date_time
+        ? new Date(tx.date_time).toISOString().slice(0, 10)
+        : "";
+      if (!dateKey) return;
+      const amt = amountByTxId[tx.transaction_id] || 0;
+      dailyMap[dateKey] = (dailyMap[dateKey] || 0) + amt;
+    });
+
+    const dates = Object.keys(dailyMap).sort();
+    const dailyValues = dates.map((d) => dailyMap[d]);
+
+    if (window.Chart && chartCanvas) {
+      const ctx = chartCanvas.getContext("2d");
+      // eslint-disable-next-line no-unused-vars
+      const chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: dates,
+          datasets: [
+            {
+              label: "Approved Amount per Day",
+              data: dailyValues,
+              borderColor: "#007bff",
+              backgroundColor: "rgba(0, 123, 255, 0.2)",
+              tension: 0.3,
+              fill: true,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: true } },
+        },
+      });
+    }
+
+    // CSV export button
+    const exportBtn = document.getElementById("exportTxReportCsvBtn");
+    if (exportBtn) {
+      exportBtn.onclick = () => {
+        let csv = "data:text/csv;charset=utf-8,\uFEFF";
+        csv += "Transaction ID,Transaction Code,Date,Amount,Status\n";
+        transactions.forEach((tx) => {
+          const dateStr = tx.date_time
+            ? new Date(tx.date_time).toISOString()
+            : "";
+          const amt = amountByTxId[tx.transaction_id] || 0;
+          csv += `${tx.transaction_id},${tx.transaction_code || ""},${dateStr},${amt.toFixed(
+            2
+          )},${tx.status || ""}\n`;
+        });
+
+        const encoded = encodeURI(csv);
+        const link = document.createElement("a");
+        link.href = encoded;
+        link.download = `approved_transactions_${year}-${String(
+          month + 1
+        ).padStart(2, "0")}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+    }
+  } catch (err) {
+    console.error("Error loading admin reports:", err);
   }
 }
 
