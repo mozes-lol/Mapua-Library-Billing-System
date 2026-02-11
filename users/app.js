@@ -458,6 +458,21 @@ function initDashboardPage() {
     }
   }
 
+  const queueBody = document.getElementById("queue-tbody");
+  if (queueBody) {
+    queueBody.addEventListener("click", (event) => {
+      const row = event.target.closest("tr[data-transaction-id]");
+      if (!row) return;
+
+      const transactionId = Number(row.dataset.transactionId || 0);
+      if (!transactionId) return;
+
+      if (typeof window.viewTransactionDetails === "function") {
+        window.viewTransactionDetails(transactionId);
+      }
+    });
+  }
+
   loadPendingQueueForDashboard();
 
 
@@ -560,7 +575,7 @@ async function loadPendingQueueForDashboard() {
         const statusClass = "waiting";
 
         return `
-          <tr>
+          <tr class="queue-row" data-transaction-id="${tx.transaction_id}">
             <td>${tx.user_id || "N/A"}</td>
             <td>${name}</td>
             <td>${time}</td>
@@ -929,6 +944,10 @@ async function loadTransactionsTable() {
   const queueTableBody = document.getElementById("queueTableBody");
   const approvedTableBody = document.getElementById("approvedTableBody");
 
+  if (!queueTableBody || !approvedTableBody) {
+    return;
+  }
+
   try {
     // Fetch all transactions
     const { data: transactions, error: transactionsError } = await supabase
@@ -939,8 +958,8 @@ async function loadTransactionsTable() {
     if (transactionsError) {
       console.error("Error fetching transactions:", transactionsError);
       const errorMsg = '<tr><td colspan="10" style="text-align: center; color: red;">Error loading transactions</td></tr>';
-      queueTableBody.innerHTML = errorMsg;
-      approvedTableBody.innerHTML = errorMsg;
+      if (queueTableBody) queueTableBody.innerHTML = errorMsg;
+      if (approvedTableBody) approvedTableBody.innerHTML = errorMsg;
       return;
     }
 
@@ -1026,18 +1045,86 @@ async function loadTransactionsTable() {
     };
 
     // Render both tables
-    queueTableBody.innerHTML = renderTableRows(pendingTransactions, false);
-    approvedTableBody.innerHTML = renderTableRows(approvedTransactions, true);
+    if (queueTableBody) {
+      queueTableBody.innerHTML = renderTableRows(pendingTransactions, false);
+    }
+    if (approvedTableBody) {
+      approvedTableBody.innerHTML = renderTableRows(approvedTransactions, true);
+    }
 
   } catch (error) {
     console.error("Error loading transactions:", error);
     const errorMsg = '<tr><td colspan="10" style="text-align: center; color: red;">Error loading transactions</td></tr>';
-    document.getElementById("queueTableBody").innerHTML = errorMsg;
-    document.getElementById("approvedTableBody").innerHTML = errorMsg;
+    if (queueTableBody) queueTableBody.innerHTML = errorMsg;
+    if (approvedTableBody) approvedTableBody.innerHTML = errorMsg;
   }
 }
 
+function ensureTransactionDetailsModal() {
+  const existing = document.getElementById("transactionDetailsModal");
+  if (existing) {
+    const closeBtn = document.getElementById("closeDetailsBtn");
+    const finalizeBtn = document.getElementById("finalizeInvoiceBtn");
+    if (closeBtn) closeBtn.onclick = closeTransactionDetails;
+    if (finalizeBtn) finalizeBtn.onclick = handleFinalizeInvoice;
+    return existing;
+  }
+
+  const modal = document.createElement("div");
+  modal.id = "transactionDetailsModal";
+  modal.style.cssText =
+    "display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); z-index:1000;";
+  modal.innerHTML = `
+    <div style="background-color: white; margin: 50px auto; padding: 30px; width: 700px; border-radius: 10px; max-height: 80vh; overflow-y: auto;">
+      <h2>Transaction Details</h2>
+      <div id="transactionDetailsContent" style="margin: 20px 0;">
+        <p><strong>Transaction ID:</strong> <span id="detailTransactionId"></span></p>
+        <p><strong>Transaction Code:</strong> <span id="detailTransactionCode"></span></p>
+        <div style="margin: 10px 0;">
+          <label for="confirmTransactionCode" style="display: block; font-weight: bold; margin-bottom: 5px;">Enter Transaction Code to Finalize:</label>
+          <input id="confirmTransactionCode" type="text" autocomplete="off" style="width: 100%; padding: 8px;" />
+          <p id="transactionCodeStatus" style="margin: 6px 0 0; font-weight: bold;"></p>
+        </div>
+        <p><strong>User:</strong> <span id="detailUserName"></span></p>
+        <p><strong>Date & Time:</strong> <span id="detailDateTime"></span></p>
+        <p><strong>School Year:</strong> <span id="detailSchoolYear"></span></p>
+        <p><strong>Term:</strong> <span id="detailTerm"></span></p>
+        <p><strong>Status:</strong> <span id="detailStatus"></span></p>
+        <p><strong>Processed By:</strong> <span id="detailProcessedBy"></span></p>
+        <hr style="margin: 20px 0;">
+        <h3>Services</h3>
+        <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead style="background-color: #f0f0f0;">
+            <tr>
+              <th>Service Name</th>
+              <th>Quantity</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="detailServicesTable"></tbody>
+        </table>
+        <p style="margin-top: 15px; font-size: 18px; font-weight: bold; text-align: right;">Grand Total: ₱<span id="detailGrandTotal"></span></p>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 10px; justify-content: flex-end;">
+        <button id="finalizeInvoiceBtn" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Finalize & Send Invoice</button>
+        <button id="closeDetailsBtn" style="background-color: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Close</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const closeBtn = document.getElementById("closeDetailsBtn");
+  const finalizeBtn = document.getElementById("finalizeInvoiceBtn");
+  if (closeBtn) closeBtn.onclick = closeTransactionDetails;
+  if (finalizeBtn) finalizeBtn.onclick = handleFinalizeInvoice;
+
+  return modal;
+}
+
 window.viewTransactionDetails = async function(transactionId) {
+  ensureTransactionDetailsModal();
   try {
     // Fetch transaction
     const { data: transaction, error: transactionError } = await supabase
@@ -1217,28 +1304,40 @@ function getCurrentUserFromStorage() {
 }
 
 async function handleFinalizeInvoice() {
-  const statusElement = document.getElementById("transactionCrudStatus");
+  const statusElement =
+    document.getElementById("transactionCrudStatus") ||
+    document.getElementById("transactionCodeStatus");
   const finalizeButton = document.getElementById("finalizeInvoiceBtn");
   const transactionId = Number(finalizeButton.dataset.transactionId);
   const currentStatus = finalizeButton.dataset.currentStatus;
   const codeInput = document.getElementById("confirmTransactionCode");
   const enteredCode = String(codeInput?.value || "").trim();
 
+  if (!statusElement) {
+    console.warn("Missing transaction status element for finalize flow.");
+  }
+
   if (!transactionId) {
-    statusElement.textContent = "Missing transaction ID for processing.";
-    statusElement.style.color = "red";
+    if (statusElement) {
+      statusElement.textContent = "Missing transaction ID for processing.";
+      statusElement.style.color = "red";
+    }
     return;
   }
 
   if (currentStatus !== "Pending") {
-    statusElement.textContent = "Only pending transactions can be processed.";
-    statusElement.style.color = "red";
+    if (statusElement) {
+      statusElement.textContent = "Only pending transactions can be processed.";
+      statusElement.style.color = "red";
+    }
     return;
   }
 
   if (!enteredCode) {
-    statusElement.textContent = "Please enter a transaction code to finalize.";
-    statusElement.style.color = "red";
+    if (statusElement) {
+      statusElement.textContent = "Please enter a transaction code to finalize.";
+      statusElement.style.color = "red";
+    }
     return;
   }
 
@@ -1267,8 +1366,10 @@ async function handleFinalizeInvoice() {
     finalizeButton.style.opacity = "0.7";
     finalizeButton.style.cursor = "not-allowed";
 
-    statusElement.textContent = "Transaction processed successfully.";
-    statusElement.style.color = "green";
+    if (statusElement) {
+      statusElement.textContent = "Transaction processed successfully.";
+      statusElement.style.color = "green";
+    }
 
     // Send email to user after approval
     try {
@@ -1286,21 +1387,30 @@ async function handleFinalizeInvoice() {
         orderItems,
       });
 
-      statusElement.textContent = "Transaction approved and email sent.";
-      statusElement.style.color = "green";
+      if (statusElement) {
+        statusElement.textContent = "Transaction approved and email sent.";
+        statusElement.style.color = "green";
+      }
     } catch (emailErr) {
       console.error("Email send failed:", emailErr);
       // Keep approval success; only warn about email
-      statusElement.textContent =
-        "Transaction approved, but email failed: " + (emailErr?.message || emailErr);
-      statusElement.style.color = "#ff9800";
+      if (statusElement) {
+        statusElement.textContent =
+          "Transaction approved, but email failed: " +
+          (emailErr?.message || emailErr);
+        statusElement.style.color = "#ff9800";
+      }
     }
 
     await loadTransactionsTable();
+    await loadPendingQueueForDashboard();
   } catch (error) {
     console.error("Error finalizing invoice:", error);
-    statusElement.textContent = "Failed to process transaction: " + error.message;
-    statusElement.style.color = "red";
+    if (statusElement) {
+      statusElement.textContent =
+        "Failed to process transaction: " + error.message;
+      statusElement.style.color = "red";
+    }
     finalizeButton.disabled = false;
     finalizeButton.textContent = "Finalize & Send Invoice";
     finalizeButton.style.opacity = "1";
