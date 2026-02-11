@@ -1606,19 +1606,20 @@
         try {
             const { data, error } = await supabase
                 .from('service_type')
-                .select('id, service_name, price, is_active')
-                .order('id', { ascending: true });
+                .select('service_id, servicename, unitprice')
+                .order('service_id', { ascending: true });
 
             if (error) {
                 console.error('Error loading services from Supabase:', error);
                 return;
             }
 
+            // Treat all services as active; activation is currently UI-only
             servicesDatabase = (data || []).map(row => ({
-                id: row.id,
-                name: row.service_name,
-                price: row.price,
-                active: row.is_active
+                id: row.service_id,
+                name: row.servicename,
+                price: Number(row.unitprice || 0),
+                active: true
             }));
 
             renderServicesTable();
@@ -1632,27 +1633,48 @@
         try {
             const { data, error } = await supabase
                 .from('transactions')
-                .select('id, student_id, student_name, program, email, created_at, status, services')
-                .in('status', ['waiting', 'encoding'])
-                .order('created_at', { ascending: true });
+                .select(`
+                    transaction_id,
+                    date_time,
+                    status,
+                    user_id,
+                    users:user_id (
+                        user_id,
+                        given_name,
+                        middle_name,
+                        last_name,
+                        program,
+                        email_address
+                    )
+                `)
+                .eq('status', 'Pending')
+                .order('date_time', { ascending: true });
 
             if (error) {
                 console.error('Error loading queue from Supabase:', error);
                 return;
             }
 
-            queueData = (data || []).map(row => ({
-                transactionId: row.id,
-                id: row.student_id,
-                name: row.student_name,
-                program: row.program,
-                email: row.email,
-                time: row.created_at
-                    ? new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    : '',
-                status: row.status || 'waiting',
-                services: row.services || {}
-            }));
+            queueData = (data || []).map(row => {
+                const u = row.users;
+                const fullName = u
+                    ? `${u.given_name} ${u.middle_name || ''} ${u.last_name}`.trim()
+                    : row.user_id;
+
+                return {
+                    transactionId: row.transaction_id,
+                    id: row.user_id,
+                    name: fullName,
+                    program: u?.program || '',
+                    email: u?.email_address || '',
+                    time: row.date_time
+                        ? new Date(row.date_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : '',
+                    // All Pending transactions start as "waiting" in the UI
+                    status: 'waiting',
+                    services: {}
+                };
+            });
         } catch (err) {
             console.error('Unexpected error loading queue:', err);
         }
@@ -1707,29 +1729,14 @@
         });
     }
 
-    async function toggleServiceStatus(serviceId) {
+    function toggleServiceStatus(serviceId) {
         const service = servicesDatabase.find(s => s.id === serviceId);
         if (!service) return;
 
-        const newActive = !service.active;
-        try {
-            const { error } = await supabase
-                .from('service_type')
-                .update({ is_active: newActive })
-                .eq('id', serviceId);
-
-            if (error) {
-                console.error('Error updating service status:', error);
-                alert('Failed to update service status in database.');
-                return;
-            }
-
-            service.active = newActive;
-            renderBillingFormServices();
-            calculateTotal();
-        } catch (err) {
-            console.error('Unexpected error updating service status:', err);
-        }
+        // Toggle only in-memory; schema does not yet have an "is_active" column
+        service.active = !service.active;
+        renderBillingFormServices();
+        calculateTotal();
     }
 
     function openAddServiceModal() {
@@ -1794,11 +1801,10 @@
                 const { data, error } = await supabase
                     .from('service_type')
                     .update({
-                        service_name: name,
-                        price: price,
-                        is_active: active
+                        servicename: name,
+                        unitprice: price
                     })
-                    .eq('id', window.editingServiceId)
+                    .eq('service_id', window.editingServiceId)
                     .select()
                     .single();
 
@@ -1810,18 +1816,16 @@
 
                 const service = servicesDatabase.find(s => s.id === window.editingServiceId);
                 if (service && data) {
-                    service.name = data.service_name;
-                    service.price = data.price;
-                    service.active = data.is_active;
+                    service.name = data.servicename;
+                    service.price = Number(data.unitprice || 0);
                 }
             } else {
                 // Add new service
                 const { data, error } = await supabase
                     .from('service_type')
                     .insert({
-                        service_name: name,
-                        price: price,
-                        is_active: active
+                        servicename: name,
+                        unitprice: price
                     })
                     .select()
                     .single();
@@ -1833,10 +1837,10 @@
                 }
 
                 servicesDatabase.push({
-                    id: data.id,
-                    name: data.service_name,
-                    price: data.price,
-                    active: data.is_active
+                    id: data.service_id,
+                    name: data.servicename,
+                    price: Number(data.unitprice || 0),
+                    active: true
                 });
             }
 
@@ -1858,7 +1862,7 @@
             const { error } = await supabase
                 .from('service_type')
                 .delete()
-                .eq('id', window.editingServiceId);
+                .eq('service_id', window.editingServiceId);
 
             if (error) {
                 console.error('Error deleting service:', error);
@@ -1994,22 +1998,24 @@
         formMode = 'encoding';
         currentStudent = waitingStudent;
 
-        try {
-            const { error } = await supabase
-                .from('transactions')
-                .update({ status: 'encoding' })
-                .eq('id', waitingStudent.transactionId);
+        // Mark as encoding only in the UI; DB status remains "Pending"
+        waitingStudent.status = 'encoding';
+        renderQueue();
 
-            if (error) {
-                console.error('Error setting transaction to encoding:', error);
-            } else {
-                waitingStudent.status = 'encoding';
+        // Load any existing transaction detail (services) for this transaction
+        try {
+            const { data: detail, error: detailError } = await supabase
+                .from('transaction_detail')
+                .select('services')
+                .eq('transaction_id', waitingStudent.transactionId)
+                .maybeSingle();
+
+            if (!detailError && detail && detail.services) {
+                waitingStudent.services = detail.services;
             }
         } catch (err) {
-            console.error('Unexpected error starting encoding:', err);
+            console.error('Unexpected error loading transaction detail:', err);
         }
-
-        renderQueue();
 
         document.getElementById('student-id').value = waitingStudent.id;
         document.getElementById('student-name').value = waitingStudent.name;
@@ -2088,12 +2094,12 @@
             try {
                 const { error } = await supabase
                     .from('transactions')
-                    .update({ status: 'cancelled' })
-                    .eq('id', currentStudent.transactionId);
+                    .update({ status: 'Rejected' })
+                    .eq('transaction_id', currentStudent.transactionId);
 
                 if (error) {
-                    console.error('Error cancelling transaction:', error);
-                    alert('Failed to cancel transaction in database.');
+                    console.error('Error rejecting transaction:', error);
+                    alert('Failed to reject transaction in database.');
                 } else {
                     queueData = queueData.filter(student => student.transactionId !== currentStudent.transactionId);
                     currentStudent = null;
@@ -2126,9 +2132,30 @@
         return selected;
     }
 
+    async function logAudit(action) {
+        const userSpan = document.getElementById('current-user');
+        const userId = userSpan ? userSpan.textContent.trim() : null;
+        if (!userId) return;
+
+        try {
+            const { error } = await supabase
+                .from('audit_log')
+                .insert({
+                    action_taken: action,
+                    log_timestamp: new Date().toISOString(),
+                    user_id: userId
+                });
+
+            if (error) {
+                console.error('Error writing to audit_log:', error);
+            }
+        } catch (err) {
+            console.error('Unexpected error writing to audit_log:', err);
+        }
+    }
+
     async function finalizeForm() {
         const tCode = document.getElementById('trans-code').value.trim();
-        const totalDisplay = document.getElementById('total-display').innerText;
         const email = document.getElementById('student-email').value.trim();
         const fineInput = parseFloat(document.getElementById('fine-amount').value) || 0;
 
@@ -2154,55 +2181,79 @@
         });
         const totalNumeric = subtotal + fineInput;
 
-        const refNo = "REF-" + Math.floor(Math.random() * 1000000);
-
         try {
+            const nowIso = new Date().toISOString();
+
             if (currentStudent && formMode === 'encoding') {
-                // Update existing queued transaction
-                const { error } = await supabase
+                // Update existing queued transaction header
+                const { data: updatedTx, error: txError } = await supabase
                     .from('transactions')
                     .update({
                         transaction_code: tCode,
-                        reference_no: refNo,
-                        services: selectedServices,
-                        subtotal: subtotal,
-                        fines: fineInput,
-                        total_amount: totalNumeric,
-                        status: 'approved'
+                        date_time: nowIso,
+                        status: 'Approved'
                     })
-                    .eq('id', currentStudent.transactionId);
+                    .eq('transaction_id', currentStudent.transactionId)
+                    .select('transaction_id')
+                    .single();
 
-                if (error) {
-                    console.error('Error finalizing existing transaction:', error);
+                if (txError) {
+                    console.error('Error finalizing existing transaction:', txError);
                     alert('Failed to finalize transaction in database.');
+                    return;
+                }
+
+                // Insert transaction detail row
+                const { error: detailError } = await supabase
+                    .from('transaction_detail')
+                    .insert({
+                        transaction_id: currentStudent.transactionId,
+                        services: selectedServices,
+                        total_amount: totalNumeric
+                    });
+
+                if (detailError) {
+                    console.error('Error inserting transaction detail:', detailError);
+                    alert('Failed to save transaction details.');
                     return;
                 }
 
                 currentStudent.status = 'processed';
             } else {
-                // Walk-in / manual transaction: create new row
-                const { error } = await supabase
+                // Walk-in / manual transaction: create new header + detail
+                const { data: txData, error: txError } = await supabase
                     .from('transactions')
                     .insert({
-                        student_id: studentId,
-                        student_name: studentName,
-                        program: program,
-                        email: email,
-                        services: selectedServices,
-                        subtotal: subtotal,
-                        fines: fineInput,
-                        total_amount: totalNumeric,
+                        date_time: nowIso,
+                        user_id: studentId,
                         transaction_code: tCode,
-                        reference_no: refNo,
-                        status: 'approved'
-                    });
+                        status: 'Approved'
+                    })
+                    .select('transaction_id')
+                    .single();
 
-                if (error) {
-                    console.error('Error inserting new transaction:', error);
+                if (txError) {
+                    console.error('Error inserting new transaction:', txError);
                     alert('Failed to save transaction to database.');
                     return;
                 }
+
+                const { error: detailError } = await supabase
+                    .from('transaction_detail')
+                    .insert({
+                        transaction_id: txData.transaction_id,
+                        services: selectedServices,
+                        total_amount: totalNumeric
+                    });
+
+                if (detailError) {
+                    console.error('Error inserting transaction detail:', detailError);
+                    alert('Failed to save transaction details.');
+                    return;
+                }
             }
+
+            await logAudit('Finalize Transaction');
 
             usedTransactionCodes.add(tCode);
 
@@ -2245,6 +2296,9 @@
                     // We don't block UI on email failure; just log it.
                 }
             }
+
+            // Generate a reference number for UI/email only
+            const refNo = "REF-" + Math.floor(Math.random() * 1000000);
 
             // Show success modal with live data
             document.getElementById('success-ref-no').innerText = refNo;
