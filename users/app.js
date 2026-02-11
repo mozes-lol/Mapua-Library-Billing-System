@@ -21,6 +21,54 @@ if (
 
 const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 
+function hasInlineDashboardViews() {
+  return Boolean(
+    document.getElementById("transaction-details-view") ||
+      document.getElementById("transaction-status-view")
+  );
+}
+
+function switchDashboardView(view) {
+  const viewMap = {
+    queue: "dashboard-view",
+    reports: "reports-view",
+    services: "services-view",
+    form: "form-view",
+    "transaction-details": "transaction-details-view",
+    "transaction-status": "transaction-status-view",
+  };
+
+  const targetId = viewMap[view];
+  Object.values(viewMap).forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (id === targetId) {
+        el.style.display =
+          id === "transaction-details-view" || id === "transaction-status-view"
+            ? "block"
+            : "flex";
+      } else {
+        el.style.display = "none";
+      }
+    }
+  });
+
+  const navQueue = document.getElementById("nav-queue");
+  const navReports = document.getElementById("nav-reports");
+  const navServices = document.getElementById("nav-services");
+  [navQueue, navReports, navServices].forEach((nav) => {
+    if (nav) nav.classList.remove("active");
+  });
+
+  if (view === "queue" && navQueue) navQueue.classList.add("active");
+  if (view === "reports" && navReports) navReports.classList.add("active");
+  if (view === "services" && navServices) navServices.classList.add("active");
+
+  if (view === "queue") {
+    loadPendingQueueForDashboard();
+  }
+}
+
 
 let emailjsClientPromise;
 async function getEmailjsClient() {
@@ -214,6 +262,11 @@ function initDashboardPage() {
 
   const user = JSON.parse(userJson);
 
+  const dateElement = document.getElementById("current-date");
+  if (dateElement) {
+    dateElement.textContent = new Date().toLocaleDateString("en-CA");
+  }
+
   setTextIfExists("userId", user.user_id || "N/A");
   setTextIfExists(
     "userName",
@@ -238,7 +291,22 @@ function initDashboardPage() {
   const servicesSection =
     document.getElementById("servicesSection") ||
     document.querySelector(".service-type");
+  const servicesCatalogSection = document.getElementById(
+    "servicesCatalogSection"
+  );
+  const servicesCatalogHeader = document.getElementById(
+    "servicesCatalogHeader"
+  );
+  const addServiceBtn = document.getElementById("addServiceBtn");
   const adminContent = document.getElementById("adminOnlyContent");
+  const reportsPlaceholder = document.getElementById("reports-placeholder");
+
+  if (hasInlineDashboardViews()) {
+    window.switchTab = (tabName) => switchDashboardView(tabName);
+    window.showForm = () => switchDashboardView("services");
+    window.startEncoding = () => switchDashboardView("services");
+    switchDashboardView("queue");
+  }
 
   if (isSuperAdmin) {
     createUsersTableHTML();
@@ -253,6 +321,18 @@ function initDashboardPage() {
     if (servicesSection) {
       servicesSection.remove();
     }
+    if (servicesCatalogSection) {
+      servicesCatalogSection.style.display = "none";
+    }
+    if (servicesCatalogHeader) {
+      servicesCatalogHeader.style.display = "none";
+    }
+    if (addServiceBtn) {
+      addServiceBtn.style.display = "none";
+    }
+    if (reportsPlaceholder) {
+      reportsPlaceholder.style.display = "none";
+    }
   } else if (isAdmin) {
     createServiceTypesTableHTML();
     loadServiceTypesTable();
@@ -264,14 +344,39 @@ function initDashboardPage() {
     if (servicesSection) {
       servicesSection.remove();
     }
+    if (servicesCatalogSection) {
+      servicesCatalogSection.style.display = "none";
+    }
+    if (servicesCatalogHeader) {
+      servicesCatalogHeader.style.display = "none";
+    }
+    if (addServiceBtn) {
+      addServiceBtn.style.display = "none";
+    }
+    if (reportsPlaceholder) {
+      reportsPlaceholder.style.display = "none";
+    }
   } else if (isRegularUser) {
     if (adminContent) {
       adminContent.innerHTML = "";
     }
+    if (servicesCatalogSection) {
+      servicesCatalogSection.style.display = "none";
+    }
+    if (servicesCatalogHeader) {
+      servicesCatalogHeader.style.display = "none";
+    }
+    if (addServiceBtn) {
+      addServiceBtn.style.display = "none";
+    }
+    if (reportsPlaceholder) {
+      reportsPlaceholder.style.display = "flex";
+    }
 
     loadServices();
 
-    serviceForm.addEventListener("submit", (e) => {
+    if (serviceForm) {
+      serviceForm.addEventListener("submit", (e) => {
       e.preventDefault();
   
       const proceed = window.confirm("Proceed to transaction details?");
@@ -326,10 +431,16 @@ function initDashboardPage() {
         createdAt: new Date().toISOString(),
       };
   
-      localStorage.setItem("pendingTransaction", JSON.stringify(pending));
-  
-      window.location.href = "transactionDetails.html";
-    });
+        localStorage.setItem("pendingTransaction", JSON.stringify(pending));
+
+        if (hasInlineDashboardViews()) {
+          switchDashboardView("transaction-details");
+          initTransactionDetailsPage();
+        } else {
+          window.location.href = "transactionDetails.html";
+        }
+      });
+    }
 
   
     const viewStatusBtn = document.querySelector(
@@ -337,10 +448,17 @@ function initDashboardPage() {
     );
     if (viewStatusBtn) {
       viewStatusBtn.addEventListener("click", () => {
-        window.location.href = "transactionStatus.html";
+        if (hasInlineDashboardViews()) {
+          switchDashboardView("transaction-status");
+          initTransactionStatusPage();
+        } else {
+          window.location.href = "transactionStatus.html";
+        }
       });
     }
   }
+
+  loadPendingQueueForDashboard();
 
 
   const resetBtn = document.querySelector('button[type="reset"]');
@@ -351,7 +469,8 @@ function initDashboardPage() {
     });
   }
 
-  logoutBtn.addEventListener("click", async () => {
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
     // Log the logout action before signing out
     const userJson = localStorage.getItem("currentUser");
     if (userJson) {
@@ -377,7 +496,84 @@ function initDashboardPage() {
         window.location.href = "index.html";
       }, 1000);
     }
-  });
+    });
+  }
+}
+
+async function loadPendingQueueForDashboard() {
+  const tbody = document.getElementById("queue-tbody");
+  if (!tbody) return;
+
+  try {
+    const { data: transactions, error: txError } = await supabase
+      .from("transactions")
+      .select("transaction_id,user_id,status,date_time")
+      .eq("status", "Pending")
+      .order("date_time", { ascending: true });
+
+    if (txError) {
+      console.error("Error loading queue transactions:", txError);
+      tbody.innerHTML =
+        '<tr><td colspan="4" style="text-align: center; color: red;">Error loading queue</td></tr>';
+      return;
+    }
+
+    if (!transactions || transactions.length === 0) {
+      tbody.innerHTML =
+        '<tr><td colspan="4" style="text-align: center;">No pending transactions</td></tr>';
+      return;
+    }
+
+    const userIds = [
+      ...new Set(transactions.map((tx) => tx.user_id).filter(Boolean)),
+    ];
+    let usersById = {};
+
+    if (userIds.length > 0) {
+      const { data: users, error: usersError } = await supabase
+        .from("users")
+        .select("user_id,given_name,last_name")
+        .in("user_id", userIds);
+
+      if (usersError) {
+        console.error("Error loading queue users:", usersError);
+      } else {
+        usersById = (users || []).reduce((acc, user) => {
+          acc[user.user_id] = user;
+          return acc;
+        }, {});
+      }
+    }
+
+    tbody.innerHTML = transactions
+      .map((tx) => {
+        const user = usersById[tx.user_id];
+        const name = user
+          ? `${user.given_name} ${user.last_name}`.trim()
+          : "N/A";
+        const time = tx.date_time
+          ? new Date(tx.date_time).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "N/A";
+        const statusClass = "waiting";
+
+        return `
+          <tr>
+            <td>${tx.user_id || "N/A"}</td>
+            <td>${name}</td>
+            <td>${time}</td>
+            <td><span class="badge ${statusClass}">pending</span></td>
+          </tr>
+        `;
+      })
+      .join("");
+  } catch (err) {
+    console.error("Unexpected queue load error:", err);
+    tbody.innerHTML =
+      '<tr><td colspan="4" style="text-align: center; color: red;">Error loading queue</td></tr>';
+  }
 }
 
 function setTextIfExists(elementId, value) {
@@ -1842,7 +2038,12 @@ async function initTransactionDetailsPage() {
           }
 
           window.alert("Your transaction is being processed");
-          window.location.href = "transactionStatus.html";
+          if (hasInlineDashboardViews()) {
+            switchDashboardView("transaction-status");
+            initTransactionStatusPage();
+          } else {
+            window.location.href = "transactionStatus.html";
+          }
         }
       });
     }
@@ -1929,13 +2130,21 @@ async function initTransactionStatusPage() {
  
   if (goBackBtn) {
     goBackBtn.addEventListener("click", () => {
-      window.location.href = "dashboard.html";
+      if (hasInlineDashboardViews()) {
+        switchDashboardView("queue");
+      } else {
+        window.location.href = "dashboard.html";
+      }
     });
   }
 
   if (makeAnotherBtn) {
     makeAnotherBtn.addEventListener("click", () => {
-      window.location.href = "dashboard.html";
+      if (hasInlineDashboardViews()) {
+        switchDashboardView("services");
+      } else {
+        window.location.href = "dashboard.html";
+      }
     });
   }
 
