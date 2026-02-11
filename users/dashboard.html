@@ -1343,6 +1343,9 @@
       <li onclick="switchTab('services-list')" id="nav-services-list">
         <a href="#"><i class="fas fa-chevron-right"></i> SERVICES</a>
       </li>
+      <li onclick="switchTab('accounts')" id="nav-accounts">
+        <a href="#"><i class="fas fa-chevron-right"></i> ACCOUNTS</a>
+      </li>
     </ul>
   </nav>
 
@@ -1412,6 +1415,16 @@
         </div>
         <div class="services-container" id="approved-transactions-panel" style="margin-bottom: 20px;">
           <h3 style="margin-bottom: 12px; color: var(--primary-maroon);">Approved Transactions</h3>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                      <label for="approvedFromDate" style="font-weight: 700; color: var(--primary-maroon);">From:</label>
+                      <input type="date" id="approvedFromDate" style="padding: 6px 10px;">
+                      <label for="approvedToDate" style="font-weight: 700; color: var(--primary-maroon);">To:</label>
+                      <input type="date" id="approvedToDate" style="padding: 6px 10px;">
+                      <button id="approvedExportBtn" class="btn-add-service-top" type="button">
+                        <i class="fas fa-file-export"></i>
+                        <span>EXPORT CSV</span>
+                      </button>
+                    </div>
           <div id="approvedTransactionsList" style="overflow-x: auto;"></div>
         </div>
         <div id="adminOnlyContent"></div>
@@ -1491,6 +1504,15 @@
             <tbody id="services-list-body"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <div id="accounts-view" style="display: none; padding: 25px 30px;">
+      <div class="services-layout">
+        <div class="services-header">
+          <div class="section-label">ACCOUNTS</div>
+        </div>
+        <div class="services-container" id="accountsContent"></div>
       </div>
     </div>
 

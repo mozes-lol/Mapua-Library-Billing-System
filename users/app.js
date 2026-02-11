@@ -36,6 +36,7 @@ function switchDashboardView(view) {
     reports: "reports-view",
     services: "services-view",
     "services-list": "services-list-view",
+    accounts: "accounts-view",
     form: "form-view",
     "transaction-details": "transaction-details-view",
     "transaction-status": "transaction-status-view",
@@ -60,15 +61,21 @@ function switchDashboardView(view) {
   const navReports = document.getElementById("nav-reports");
   const navServices = document.getElementById("nav-services");
   const navServicesList = document.getElementById("nav-services-list");
-  [navQueue, navReports, navServices, navServicesList].forEach((nav) => {
-    if (nav) nav.classList.remove("active");
-  });
+  const navAccounts = document.getElementById("nav-accounts");
+  [navQueue, navReports, navServices, navServicesList, navAccounts].forEach(
+    (nav) => {
+      if (nav) nav.classList.remove("active");
+    }
+  );
 
   if (view === "queue" && navQueue) navQueue.classList.add("active");
   if (view === "reports" && navReports) navReports.classList.add("active");
   if (view === "services" && navServices) navServices.classList.add("active");
   if (view === "services-list" && navServicesList) {
     navServicesList.classList.add("active");
+  }
+  if (view === "accounts" && navAccounts) {
+    navAccounts.classList.add("active");
   }
 
   if (view === "queue") {
@@ -79,6 +86,10 @@ function switchDashboardView(view) {
   }
   if (view === "services-list") {
     loadServicesListPanel();
+  }
+  if (view === "accounts") {
+    createUsersTableHTML();
+    loadUsersTable();
   }
 }
 
@@ -317,6 +328,7 @@ function initDashboardPage() {
   const servicesListActionsHeader = document.getElementById(
     "services-list-actions-header"
   );
+  const navAccounts = document.getElementById("nav-accounts");
   const adminContent = document.getElementById("adminOnlyContent");
   const reportsPlaceholder = document.getElementById("reports-placeholder");
 
@@ -358,6 +370,9 @@ function initDashboardPage() {
     if (reportsPlaceholder) {
       reportsPlaceholder.style.display = "none";
     }
+    if (navAccounts) {
+      navAccounts.style.display = "block";
+    }
   } else if (isAdmin) {
     createServiceTypesTableHTML();
     loadServiceTypesTable();
@@ -387,6 +402,9 @@ function initDashboardPage() {
     if (reportsPlaceholder) {
       reportsPlaceholder.style.display = "none";
     }
+    if (navAccounts) {
+      navAccounts.style.display = "block";
+    }
   } else if (isRegularUser) {
     if (adminContent) {
       adminContent.innerHTML = "";
@@ -408,6 +426,9 @@ function initDashboardPage() {
     }
     if (reportsPlaceholder) {
       reportsPlaceholder.style.display = "flex";
+    }
+    if (navAccounts) {
+      navAccounts.style.display = "none";
     }
 
     loadServices();
@@ -560,6 +581,7 @@ function initDashboardPage() {
   loadPendingQueueForDashboard();
   loadApprovedTransactionsList();
   loadServicesListPanel();
+  initApprovedReportHandlers();
 
 
   const resetBtn = document.querySelector('button[type="reset"]');
@@ -595,6 +617,78 @@ function initDashboardPage() {
     }
     });
   }
+}
+
+function initApprovedReportHandlers() {
+  const fromInput = document.getElementById("approvedFromDate");
+  const toInput = document.getElementById("approvedToDate");
+  const exportBtn = document.getElementById("approvedExportBtn");
+
+  if (exportBtn && !exportBtn.dataset.bound) {
+    exportBtn.dataset.bound = "true";
+    exportBtn.addEventListener("click", () => {
+      exportApprovedTransactionsCsv();
+    });
+  }
+
+  if (fromInput && !fromInput.dataset.bound) {
+    fromInput.dataset.bound = "true";
+    fromInput.addEventListener("change", () => {
+      loadApprovedTransactionsList();
+    });
+  }
+
+  if (toInput && !toInput.dataset.bound) {
+    toInput.dataset.bound = "true";
+    toInput.addEventListener("change", () => {
+      loadApprovedTransactionsList();
+    });
+  }
+}
+
+function getApprovedDateRange() {
+  const fromInput = document.getElementById("approvedFromDate");
+  const toInput = document.getElementById("approvedToDate");
+  const fromValue = fromInput?.value || "";
+  const toValue = toInput?.value || "";
+
+  const range = { fromIso: null, toIso: null };
+
+  if (fromValue) {
+    const fromDate = new Date(`${fromValue}T00:00:00`);
+    if (!Number.isNaN(fromDate.getTime())) {
+      range.fromIso = fromDate.toISOString();
+    }
+  }
+
+  if (toValue) {
+    const toDate = new Date(`${toValue}T23:59:59`);
+    if (!Number.isNaN(toDate.getTime())) {
+      range.toIso = toDate.toISOString();
+    }
+  }
+
+  return range;
+}
+
+async function fetchApprovedTransactions() {
+  const range = getApprovedDateRange();
+  let query = supabase
+    .from("transactions")
+    .select("transaction_id,transaction_code,user_id,date_time,status,processed_by")
+    .eq("status", "Approved")
+    .order("date_time", { ascending: false });
+
+  if (range.fromIso) {
+    query = query.gte("date_time", range.fromIso);
+  }
+  if (range.toIso) {
+    query = query.lte("date_time", range.toIso);
+  }
+
+  const { data: transactions, error: txError } = await query;
+
+  return { transactions, txError };
 }
 
 function canManageServices() {
@@ -775,11 +869,7 @@ async function loadApprovedTransactionsList() {
   if (!listContainer) return;
 
   try {
-    const { data: transactions, error: txError } = await supabase
-      .from("transactions")
-      .select("transaction_id,transaction_code,user_id,date_time,status,processed_by")
-      .eq("status", "Approved")
-      .order("date_time", { ascending: false });
+    const { transactions, txError } = await fetchApprovedTransactions();
 
     if (txError) {
       console.error("Error loading approved transactions:", txError);
@@ -881,6 +971,90 @@ async function loadApprovedTransactionsList() {
     listContainer.innerHTML =
       '<p style="color: #b22222;">Unexpected error loading approved transactions.</p>';
   }
+}
+
+async function exportApprovedTransactionsCsv() {
+  const { transactions, txError } = await fetchApprovedTransactions();
+  if (txError) {
+    console.error("Error exporting approved transactions:", txError);
+    window.alert("Failed to export CSV.");
+    return;
+  }
+
+  if (!transactions || transactions.length === 0) {
+    window.alert("No approved transactions found for this range.");
+    return;
+  }
+
+  const userIds = [
+    ...new Set(transactions.map((tx) => tx.user_id).filter(Boolean)),
+  ];
+  let usersById = {};
+
+  if (userIds.length > 0) {
+    const { data: users, error: usersError } = await supabase
+      .from("users")
+      .select("user_id,given_name,last_name")
+      .in("user_id", userIds);
+
+    if (!usersError) {
+      usersById = (users || []).reduce((acc, user) => {
+        acc[user.user_id] = user;
+        return acc;
+      }, {});
+    }
+  }
+
+  const txIds = transactions.map((tx) => tx.transaction_id);
+  let totalsById = {};
+
+  if (txIds.length > 0) {
+    const { data: details, error: detailError } = await supabase
+      .from("transaction_detail")
+      .select("transaction_id,total_amount")
+      .in("transaction_id", txIds);
+
+    if (!detailError) {
+      (details || []).forEach((detail) => {
+        totalsById[detail.transaction_id] = detail.total_amount || 0;
+      });
+    }
+  }
+
+  let csv = "Transaction ID,Transaction Code,User ID,Name,Date,Processed By,Total\n";
+
+  transactions.forEach((tx) => {
+    const user = usersById[tx.user_id];
+    const name = user
+      ? `${user.given_name} ${user.last_name}`.trim()
+      : "N/A";
+    const dateTime = tx.date_time
+      ? new Date(tx.date_time).toLocaleString()
+      : "N/A";
+    const total = totalsById[tx.transaction_id] || 0;
+
+    csv += `${tx.transaction_id},${tx.transaction_code || ""},${
+      tx.user_id || ""
+    },"${name}","${dateTime}",${tx.processed_by || ""},${Number(
+      total
+    ).toFixed(2)}\n`;
+  });
+
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+
+  const range = getApprovedDateRange();
+  const nameSuffix = `${
+    range.fromIso ? range.fromIso.slice(0, 10) : "all"
+  }_${range.toIso ? range.toIso.slice(0, 10) : "all"}`;
+  link.download = `approved_transactions_${nameSuffix}.csv`;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 async function loadPendingQueueForDashboard() {
@@ -1036,7 +1210,10 @@ async function loadServices() {
 }
 
 function createUsersTableHTML() {
-  const adminContent = document.getElementById("adminOnlyContent");
+  const accountsContent = document.getElementById("accountsContent");
+  const adminContent = accountsContent || document.getElementById("adminOnlyContent");
+  if (!adminContent) return;
+
   adminContent.innerHTML = `
     <div id="usersTableSection" style="margin: 20px 0;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1927,6 +2104,7 @@ async function loadAdminReports() {
 
 async function loadUsersTable() {
   const tableBody = document.getElementById("usersTableBody");
+  if (!tableBody) return;
 
   try {
     const { data: users, error } = await supabase
