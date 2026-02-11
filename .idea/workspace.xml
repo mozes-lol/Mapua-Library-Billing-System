@@ -6,6 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="cc35eb1b-5f03-41ac-90f8-f705a970e24f" name="Changes" comment="Supabase is already connected to the system">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/users/admin_dashboard.css" beforeDir="false" afterPath="$PROJECT_DIR$/users/admin_dashboard.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/users/admin_dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/users/admin_dashboard.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,7 +56,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "frontend-admin-dashboard",
+    "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/murad/IdeaProjects/Mapua-Library-Billing-System",

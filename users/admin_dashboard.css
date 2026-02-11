@@ -207,7 +207,6 @@ font-weight: 600;
 }
 
 
-
 /* Menu Header */
 
 .menu-header {
@@ -671,26 +670,16 @@ position: relative;
 box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
 
 
-
-/* Lined paper effect */
-
-background-image: repeating-linear-gradient(
-
-transparent,
-
-transparent 48px,
-
-var(--light-gray) 48px,
-
-var(--light-gray) 49px
-
 );
 
 background-attachment: local;
 
 }
 
-
+.services-table thead {
+    background: linear-gradient(135deg, var(--primary-maroon) 0%, var(--dark-maroon) 100%);
+    color: var(--accent-gold);
+}
 
 /* Custom Scrollbar */
 
@@ -1229,7 +1218,6 @@ min-width: 120px;
 text-align: center;
 
 }
-
 
 
 /* Form Inputs */
@@ -1871,3 +1859,4 @@ width: 250px;
 .cards-container {
 
 flex-direction: column;
+
