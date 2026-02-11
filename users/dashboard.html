@@ -4,46 +4,50 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mapua Library Billing System</title>
+    <link rel="stylesheet" href="dashboard.css" />
   </head>
   <body>
     <!-- Admin-only sections are dynamically created via JavaScript -->
     <div id="adminOnlyContent"></div>
-    
-    <hr>
-    
-    <!-- User service section (hidden for admin/superadmin via app.js) -->
-    <div id="servicesSection" class="service-type">
-      <h2>Service Type</h2>
 
-      <form id="serviceForm">
-        <div class="service-holder">
-          <div id="servicesList"></div>
-        </div>
+    <hr />
 
-        <br />
+    <div class="dashboard-container">
+      <img
+        class="img-logo2"
+        src="../resources/mapua_logo.png"
+        alt="Mapua Logo"
+      />
 
-        <div>
-          <label for="totalAmount">Total:</label>
-          <input id="totalAmount" type="text" value="0.00" readonly />
-        </div>
+      <div id="servicesSection" class="service-type">
+        <h2>Service Type</h2>
 
-        <div class="btn-holder">
-          <button type="submit">Submit Transaction</button>
-          <button type="reset">Reset</button>
-          <button type="button">View Transaction Status</button>
-        </div>
-      </form>
+        <form id="serviceForm">
+          <div class="service-holder">
+            <div id="servicesList"></div>
+          </div>
 
-    
-  
+          <br />
+
+          <div class="total-container">
+            <label id="total-text" for="totalAmount">Total:</label>
+            <input id="totalAmount" type="text" value="0.00" readonly />
+          </div>
+
+          <div class="btn-holder">
+            <button class="submit-btn" type="submit">Submit Transaction</button>
+            <button class="reset-btn" type="reset">Reset</button>
+            <button class="status-btn" type="button">
+              View Transaction Status
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <br />
+      <button id="logoutBtn">Logout</button>
+      <p id="status"></p>
     </div>
-    
-    <br />
-    <button id="logoutBtn">Logout</button>
-    <p id="status"></p>
-
     <script type="module" src="app.js"></script>
-
-</script>
   </body>
 </html>
