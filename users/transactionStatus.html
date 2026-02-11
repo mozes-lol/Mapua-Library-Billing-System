@@ -4,16 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Transaction Status</title>
+    <link rel="stylesheet" href="transactionstatus.css" />
   </head>
   <body>
-    <h1>Transaction Status</h1>
+    <div class="transaction-container">
+      <h1>Transaction Status</h1>
 
-    <div id="txStatusList"></div>
+      <div class="transaction-info">
+        <p id="txStatusMessage"></p>
+        <div id="txStatusList"></div>
+      </div>
 
-    <p id="txStatusMessage"></p>
-
-    <button id="goBackToDashboardBtn">Go Back to Dashboard</button>
-    <button id="makeAnotherTransactionBtn">Make Another Transaction</button>
+      <div class="btn-holder">
+        <button id="makeAnotherTransactionBtn" class="status-btn">
+          Make Another Transaction
+        </button>
+      </div>
+    </div>
 
     <script type="module" src="app.js"></script>
   </body>
