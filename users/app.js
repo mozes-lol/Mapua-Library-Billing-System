@@ -170,7 +170,10 @@ function initLoginPage() {
       const user = userData[0];
       localStorage.setItem("currentUser", JSON.stringify(user));
 
-      loadingText.textContent = "Login successful! Redirecting...";
+  
+      if (loadingText) loadingText.textContent = "Logging audit...";
+      await logAuditAction(user.user_id, "User logged in");
+
       loadingText.textContent = "Login successful! Redirecting...";
 
       setTimeout(() => {
@@ -345,6 +348,17 @@ function initDashboardPage() {
   }
 
   logoutBtn.addEventListener("click", async () => {
+    // Log the logout action before signing out
+    const userJson = localStorage.getItem("currentUser");
+    if (userJson) {
+      try {
+        const user = JSON.parse(userJson);
+        await logAuditAction(user.user_id, "User logged out");
+      } catch (err) {
+        console.error("Error logging logout:", err);
+      }
+    }
+
     const { error } = await supabase.auth.signOut();
 
     if (error) {
@@ -1958,5 +1972,23 @@ async function checkIfLoggedIn() {
     if (userJson) {
       window.location.href = "dashboard.html";
     }
+  }
+}
+
+async function logAuditAction(userId, action) {
+  try {
+    const { error } = await supabase
+      .from("audit_log")
+      .insert({
+        user_id: userId,
+        action_taken: action,
+        log_timestamp: new Date().toISOString(),
+      });
+
+    if (error) {
+      console.error("Error logging audit action:", error);
+    }
+  } catch (err) {
+    console.error("Unexpected error logging audit:", err);
   }
 }
