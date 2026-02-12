@@ -1,5 +1,8 @@
-
-export async function loadUserDashboardSummary(user, supabase, setTextIfExists) {
+export async function loadUserDashboardSummary(
+  user,
+  supabase,
+  setTextIfExists
+) {
   try {
     const txCountEl = document.getElementById("transaction-count");
     const pendingEl = document.getElementById("pending-email-count");
@@ -26,7 +29,6 @@ export async function loadUserDashboardSummary(user, supabase, setTextIfExists) 
     if (txCountEl) txCountEl.textContent = String(totalTransactions);
     if (pendingEl) pendingEl.textContent = String(pendingCount);
 
-   
     let inlineText = "-";
     const { data: pendingQueue, error: pendingError } = await supabase
       .from("transactions")
@@ -39,8 +41,7 @@ export async function loadUserDashboardSummary(user, supabase, setTextIfExists) 
         (tx) => tx.user_id === user.user_id
       );
       if (userPending.length > 0) {
-        const latestUserPending =
-          userPending[userPending.length - 1];
+        const latestUserPending = userPending[userPending.length - 1];
         const indexInQueue = pendingQueue.findIndex(
           (tx) => tx.transaction_id === latestUserPending.transaction_id
         );
@@ -55,4 +56,3 @@ export async function loadUserDashboardSummary(user, supabase, setTextIfExists) 
     console.error("Error loading user dashboard summary:", err);
   }
 }
-
