@@ -1,5 +1,5 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { EMAILJS_CONFIG, SUPABASE_CONFIG } from "../config.js";
+import { EMAILJS_CONFIG, SUPABASE_CONFIG } from "./config.js";
 
 // const link = document.createElement("link");
 // link.rel = "stylesheet";
@@ -3487,7 +3487,7 @@ async function initTransactionStatusPage() {
       const titleRow = document.createElement("div");
       titleRow.className = "tx-receipt-title-row";
       const receiptLogo = document.createElement("img");
-      receiptLogo.src = "../resources/mapua_logo.png";
+      receiptLogo.src = "mapua_logo.png";
       receiptLogo.alt = "Mapua";
       receiptLogo.className = "tx-receipt-logo";
       const receiptTitle = document.createElement("span");
