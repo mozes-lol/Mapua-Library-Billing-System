@@ -119,3 +119,56 @@ h2 {
   background-color: aqua;
   margin-top: 5%;
 }
+
+@media (max-width: 768px) {
+  body {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+
+  .dashboard-container {
+    width: 90vw;
+    height: auto;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+  }
+
+  h2 {
+    font-size: 1.6rem;
+  }
+
+  .service-type {
+    width: 90%;
+    height: auto;
+    margin-left: 5%;
+    margin-right: 5%;
+  }
+
+  .service-holder {
+    width: 95%;
+    padding-left: 5%;
+    padding-right: 5%;
+  }
+
+  .checkbox {
+    width: 6vw;
+    height: 3vh;
+  }
+
+  .servicename-holder {
+    width: 55vw;
+  }
+
+  .service-qty {
+    width: 12vw;
+  }
+
+  .btn-holder {
+    margin-top: 8%;
+  }
+}
