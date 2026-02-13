@@ -31,6 +31,11 @@ function hasInlineDashboardViews() {
 }
 
 function switchDashboardView(view) {
+  if (view === "queue" && !(roleState.isAdmin || roleState.isSuperAdmin)) {
+    switchDashboardView("services");
+    return;
+  }
+
   const viewMap = {
     queue: "dashboard-view",
     reports: "reports-view",
@@ -517,6 +522,11 @@ function initDashboardPage() {
     if (navReports) navReports.style.display = "none";
     if (navServicesList) navServicesList.style.display = "none";
     if (navServices) navServices.style.display = "block";
+
+    const dashboardView = document.getElementById("dashboard-view");
+    if (dashboardView) {
+      dashboardView.classList.remove("view-panel--active");
+    }
 
     loadServices();
     // Load user-specific dashboard summary cards (transactions, pending, in-line)
