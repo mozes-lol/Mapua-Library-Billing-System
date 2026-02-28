@@ -783,7 +783,7 @@ function initApprovedReportHandlers() {
   if (exportBtn && !exportBtn.dataset.bound) {
     exportBtn.dataset.bound = "true";
     exportBtn.addEventListener("click", () => {
-      exportApprovedTransactionsCsv();
+      exportApprovedTransactionsExcel();
     });
   }
 
@@ -1160,91 +1160,136 @@ function updateReportSummaryElements(totalTransactions, totalRevenue) {
   if (revEl) revEl.textContent = "₱" + Number(totalRevenue).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-async function exportApprovedTransactionsCsv() {
+const PRINTING_REPORT_CATEGORIES = [
+  "BLK TEXT",
+  "BLK GRAPHICS",
+  "COLORED TEXT",
+  "COL GRAPHICS",
+  "LIB FINE",
+];
+
+const PRINTING_REPORT_MONTHS = [
+  "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+  "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
+];
+
+function getPrintingCategoryIndex(servicename) {
+  const u = (servicename || "").toUpperCase().trim();
+  if (u.includes("BLK") && u.includes("GRAPHICS")) return 1;
+  if (u.includes("BLK")) return 0;
+  if ((u.includes("COLORED") || u.includes("COLOURED")) && u.includes("TEXT")) return 2;
+  if ((u.includes("COL") || u.includes("COLOR")) && u.includes("GRAPHICS")) return 3;
+  if (u.includes("FINE") || u.includes("LIB ")) return 4;
+  return -1;
+}
+
+async function exportApprovedTransactionsExcel() {
   const { transactions, txError } = await fetchApprovedTransactions();
   if (txError) {
     console.error("Error exporting approved transactions:", txError);
-    window.alert("Failed to export CSV.");
+    window.alert("Failed to export report.");
     return;
   }
 
-  if (!transactions || transactions.length === 0) {
-    window.alert("No approved transactions found for this range.");
-    return;
-  }
-
-  const userIds = [
-    ...new Set(transactions.map((tx) => tx.user_id).filter(Boolean)),
-  ];
-  let usersById = {};
-
-  if (userIds.length > 0) {
-    const { data: users, error: usersError } = await supabase
-      .from("users")
-      .select("user_id,given_name,last_name")
-      .in("user_id", userIds);
-
-    if (!usersError) {
-      usersById = (users || []).reduce((acc, user) => {
-        acc[user.user_id] = user;
-        return acc;
-      }, {});
-    }
-  }
-
-  const txIds = transactions.map((tx) => tx.transaction_id);
-  let totalsById = {};
-
+  const txIds = (transactions || []).map((tx) => tx.transaction_id);
+  let detailsList = [];
   if (txIds.length > 0) {
     const { data: details, error: detailError } = await supabase
       .from("transaction_detail")
-      .select("transaction_id,total_amount")
+      .select("transaction_id,total_amount,services")
       .in("transaction_id", txIds);
-
-    if (!detailError) {
-      (details || []).forEach((detail) => {
-        totalsById[detail.transaction_id] = detail.total_amount || 0;
-      });
-    }
+    if (!detailError && details) detailsList = details;
   }
 
-  let csv = "Transaction ID,Transaction Code,User ID,Name,Date,Processed By,Total\n";
+  const serviceIds = new Set();
+  detailsList.forEach((d) => {
+    (d.services || []).forEach((s) => serviceIds.add(s.service_id));
+  });
+  let serviceNames = {};
+  if (serviceIds.size > 0) {
+    const { data: services } = await supabase
+      .from("service_type")
+      .select("service_id,servicename")
+      .in("service_id", [...serviceIds]);
+    (services || []).forEach((s) => {
+      serviceNames[s.service_id] = s.servicename || "";
+    });
+  }
 
+  const aggregate = Array.from({ length: 12 }, () => ({}));
   transactions.forEach((tx) => {
-    const user = usersById[tx.user_id];
-    const name = user
-      ? `${user.given_name} ${user.last_name}`.trim()
-      : "N/A";
-    const dateTime = tx.date_time
-      ? new Date(tx.date_time).toLocaleString()
-      : "N/A";
-    const total = totalsById[tx.transaction_id] || 0;
-
-    csv += `${tx.transaction_id},${tx.transaction_code || ""},${
-      tx.user_id || ""
-    },"${name}","${dateTime}",${tx.processed_by || ""},${Number(
-      total
-    ).toFixed(2)}\n`;
+    const dt = tx.date_time ? new Date(tx.date_time) : null;
+    if (!dt || isNaN(dt.getTime())) return;
+    const monthIndex = dt.getMonth();
+    const day = dt.getDate();
+    const detail = detailsList.find((d) => d.transaction_id === tx.transaction_id);
+    const items = detail?.services || [];
+    items.forEach((item) => {
+      const name = serviceNames[item.service_id] || "";
+      const catIndex = getPrintingCategoryIndex(name);
+      if (catIndex < 0) return;
+      if (!aggregate[monthIndex][catIndex]) aggregate[monthIndex][catIndex] = {};
+      const qty = Number(item.quantity) || 0;
+      aggregate[monthIndex][catIndex][day] = (aggregate[monthIndex][catIndex][day] || 0) + qty;
+    });
   });
 
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
+  const wb = buildPrintingReportWorkbook(aggregate);
+  if (!wb) return;
 
   const range = getApprovedDateRange();
-  const nameSuffix = `${
-    range.fromIso ? range.fromIso.slice(0, 10) : "all"
-  }_${range.toIso ? range.toIso.slice(0, 10) : "all"}`;
-  link.download = `approved_transactions_${nameSuffix}.csv`;
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const fromStr = range.fromIso ? range.fromIso.slice(0, 10) : "";
+  const toStr = range.toIso ? range.toIso.slice(0, 10) : "";
+  const dateSuffix = fromStr && toStr ? `_${fromStr}_${toStr}` : fromStr ? `_from_${fromStr}` : toStr ? `_to_${toStr}` : "";
+  const filename = `Printing Services Report${dateSuffix}.xlsx`;
+  XLSX.writeFile(wb, filename);
 }
 
-// Helper functions for queue table clicks
+function getDayColLetter(day1To31) {
+  const colIndex = day1To31 + 1;
+  if (colIndex <= 26) return String.fromCharCode(64 + colIndex);
+  return "A" + String.fromCharCode(64 + colIndex - 26);
+}
+
+function buildPrintingReportWorkbook(aggregate) {
+  if (typeof XLSX === "undefined") {
+    window.alert("Excel export library not loaded. Please refresh the page.");
+    return null;
+  }
+  const wb = XLSX.utils.book_new();
+  for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+    const monthData = aggregate[monthIndex] || {};
+    const rows = [];
+    rows.push([]);
+    rows.push([]);
+    const headerRow = [""];
+    for (let d = 1; d <= 31; d++) headerRow.push(d);
+    headerRow.push("TOTAL");
+    rows.push(headerRow);
+    for (let catIndex = 0; catIndex < PRINTING_REPORT_CATEGORIES.length; catIndex++) {
+      const row = [PRINTING_REPORT_CATEGORIES[catIndex]];
+      const dayData = monthData[catIndex] || {};
+      for (let day = 1; day <= 31; day++) {
+        row.push(dayData[day] ?? 0);
+      }
+      const excelRow = 4 + catIndex;
+      row.push({ f: `=SUM(B${excelRow}:AE${excelRow})` });
+      rows.push(row);
+    }
+    const totalRow = ["TOTAL"];
+    for (let day = 1; day <= 31; day++) {
+      const colLetter = getDayColLetter(day);
+      totalRow.push({ f: `=SUM(${colLetter}4:${colLetter}8)` });
+    }
+    totalRow.push({ f: "=SUM(B9:AE9)" });
+    rows.push(totalRow);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, PRINTING_REPORT_MONTHS[monthIndex]);
+  }
+  return wb;
+}
+
+
 window.handleQueueBadgeClick = function(event, transactionId) {
   event.stopPropagation();
   event.preventDefault();
